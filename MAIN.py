@@ -739,3 +739,10 @@ if __name__ == "__main__":
             def cancel_form(self):
                 # Switch back to the main menu page
                 self.controller.show_frame("MainMenu_Page")
+
+                MiddleInitial_label = tk.Label(form_frame, text='Middle Name:', font=('inter', 18), bg='#5D1C1C',
+                                               fg='#FFFFFF')
+                MiddleInitial_label.grid(row=6, column=0, padx=10, pady=15, sticky='e')
+
+                self.MiddleInitial_entry = tk.Entry(form_frame, font=('inter', 14), width=25)
+                self.MiddleInitial_entry.grid(row=6, column=1, padx=10, pady=15, sticky='w')
