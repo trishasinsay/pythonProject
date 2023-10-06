@@ -1,114 +1,150 @@
 import tkinter as tk
-from PIL import Image, ImageTk
 import cv2
+from PIL import Image, ImageTk
 import pytesseract
+import mysql.connector
+from tkinter import messagebox  # Import messagebox module
+
+
 
 class MatchingPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         self.cap = None
+        self.photo = None
+        self.camera_preview_initialized = False
 
-        # Create a canvas that covers the entire frame with a background color
-        self.canvas = tk.Canvas(self, width=self.winfo_screenwidth(), height=self.winfo_screenheight(), bg='#5D1C1C')
-        self.canvas.pack()
+        # Create a canvas to display the camera preview
+        self.camera_canvas = tk.Canvas(self, width=640, height=480)
+        self.camera_canvas.place(relx=0.5, rely=0.4, anchor=tk.CENTER)
 
-        # Create a label for the text extraction results
-        self.text_result_label = tk.Label(self, text='', font=('inter', 14), fg='white', bg='#5D1C1C')
-        self.text_result_label.place(relx=0.5, rely=0.9, anchor=tk.CENTER)
+        # Create a StringVar to hold the extracted text
+        self.extracted_text_var = tk.StringVar()
 
-        # Define the background color for the scan button
-        scan_button_bg_color = '#5D1C1C'
+        # Call the function to initialize and display the camera preview
+        self.initialize_camera_preview()
 
-        # Create Scan button with background color
-        self.scan_button = tk.Button(self, text='TAP TO SCAN YOUR COR', font=('caveat brush', 18), fg='white', bg=scan_button_bg_color,
-                                     width=28, command=self.capture_and_extract)
-        self.scan_button.place(relx=0.5, rely=0.93, anchor=tk.CENTER)
+    def initialize_camera_preview(self):
+        if not self.camera_preview_initialized:
+            try:
+                # Open the camera (replace '0' with the correct camera index or device name)
+                self.cap = cv2.VideoCapture(1)
+                if not self.cap.isOpened():
+                    raise Exception("Camera not found or cannot be opened.")
+                self.camera_preview_initialized = True
+            except Exception as e:
+                print(f"Error initializing camera: {str(e)}")
 
-        # Call the function to start the camera preview
-        self.open_camera()
+        self.update_camera_preview()
 
-    def open_camera(self):
-        # Start the camera preview
-        self.cap = cv2.VideoCapture(0)
-        self.show_camera_preview()
-
-    def show_camera_preview(self):
+    def update_camera_preview(self):
+        # Read a frame from the camera
         ret, frame = self.cap.read()
+
         if ret:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(frame)
+            # Convert the frame to RGB format
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-            # Adjust the dimensions of the image (width, height)
-            img = img.resize((800, 500))
+            # Extract text and draw a bounding box
+            extracted_text, bbox_image = self.extract_text_from_image(frame_rgb)
 
-            img_tk = ImageTk.PhotoImage(img)
-            self.canvas.delete("all")  # Clear previous drawings
+            # Update the extracted text using StringVar
+            self.extracted_text_var.set(extracted_text)
 
-            # Calculate the position to center the camera preview
-            canvas_width = self.canvas.winfo_width()
-            canvas_height = self.canvas.winfo_height()
-            img_width = img_tk.width()
-            img_height = img_tk.height()
+            # Convert the frame with the bounding box to PhotoImage
+            self.photo = ImageTk.PhotoImage(image=Image.fromarray(bbox_image))
 
-            x = (canvas_width - img_width) // 2
-            y = (canvas_height - img_height) // 2
+            # Update the canvas with the new frame
+            self.camera_canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
-            self.canvas.create_image(x, y, anchor=tk.NW, image=img_tk)
-            self.canvas.image = img_tk
-            self.after(10, self.show_camera_preview)
+            # Check for a match in the database
+            self.check_matching(extracted_text)
 
-            # Create the sub-heading label at the top center of the camera preview
-            sub_heading_label_text = 'Please scan your Certificate of Registration'
-            sub_heading_label = self.canvas.create_text(canvas_width // 2, y -100 + 50,
-                                                        text=sub_heading_label_text, font=('caveat brush', 20),
-                                                        fill='White')
+        # Schedule the update method to be called again after 10ms
+        self.after(10, self.update_camera_preview)
 
-    def close_camera(self):
-        # Release the camera object
+    def extract_text_from_image(self, image):
+        # Convert the OpenCV BGR image to RGB format
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # Use Tesseract to perform OCR and extract text from the image
+        extracted_text = pytesseract.image_to_string(Image.fromarray(image_rgb))
+
+        # Draw a bounding box around the detected text (resize the bounding box)
+        d = pytesseract.image_to_boxes(Image.fromarray(image_rgb))
+        for b in d.splitlines():
+            b = b.split()
+            # Resize the bounding box by multiplying the coordinates by a scaling factor
+            scale_factor = 1.5  # Adjust this value to resize the bounding box as needed
+            x1, y1, x2, y2 = int(b[1]), int(b[2]), int(b[3]), int(b[4])
+            x1, y1, x2, y2 = int(x1 * scale_factor), int(y1 * scale_factor), int(x2 * scale_factor), int(
+                y2 * scale_factor)
+            image_rgb = cv2.rectangle(image_rgb, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+        return extracted_text, image_rgb
+
+    def check_matching(self, extracted_text):
+        # Check if extracted_text is not empty
+        if extracted_text:
+            # Replace with your database credentials
+            db = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="030702",
+                database="db_test1"
+            )
+
+            cursor = db.cursor()
+
+            # Execute a SQL query to retrieve the ID numbers from the database
+            cursor.execute("SELECT id_number FROM tbl_test1")
+            results = cursor.fetchall()
+
+            # Close the database connection
+            db.close()
+
+            # Extract the ID numbers from the results and normalize them (e.g., remove spaces and convert to uppercase)
+            id_numbers = {result[0].strip().upper() for result in results}
+
+            # Normalize the extracted text for comparison
+            extracted_text = extracted_text.strip().upper()
+
+            # Debug print statements
+            print("Extracted Text:", extracted_text)  # Cleaned and normalized extracted text
+
+            # Check if the normalized extracted text is in the set of normalized ID numbers
+            if extracted_text in id_numbers:
+                print("Matched")
+                # Show a confirmation message
+                messagebox.showinfo("Validation Successful", "Your ID is now Validated")
+                # Close the matching page
+                self.on_leave()
+            else:
+                print("Not Matched")
+        else:
+            print("No text detected")
+
+    def stop_camera(self):
+        # Release the camera
         if self.cap is not None:
             self.cap.release()
 
     def on_leave(self):
         # Call the function to close the camera when leaving the page
-        self.close_camera()
+        self.stop_camera()
 
-    def capture_and_extract(self):
-        if self.cap is None:
-            self.start_camera()
-
-        ret, frame = self.cap.read()
-        if ret:
-            self.stop_camera()
-            extracted_text = self.extract_text_from_image(frame)
-            self.text_result_label.config(text=extracted_text)
-            print("Extracted Text:", extracted_text)
-
-    def extract_text_from_image(self, image):
-        extracted_text = pytesseract.image_to_string(image)
-        return extracted_text
-
+# Example usage
 if __name__ == "__main__":
     app = tk.Tk()
     matching_page = MatchingPage(app, None)
     matching_page.pack(fill="both", expand=True)
     app.mainloop()
 
-    def show_popup(self):
-        # Create a Toplevel window (pop-up)
-        popup = tk.Toplevel(self)
-
-        # Set the title and size of the pop-up window
-        popup.title("Capture Image")
-        popup.geometry("400x200")
-
-        # Add widgets and functionality to the pop-up window
-        label = tk.Label(popup, text="This is a pop-up window.")
-        label.pack(pady=20)
-
-        close_button = tk.Button(popup, text="Close", command=popup.destroy)
-        close_button.pack()
-
-        # Create the camera preview label
-        self.camera_preview_label = tk.Label(self, width=500, height=80, bg='white')
-        self.camera_preview_label.place(relx=0.9, rely=0.3, anchor=tk.E, width=300, height=300)
+class StartPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        self.controller.title('TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES-CAVITE')
+        self.controller.state('zoomed')
+        self.controller.iconphoto(False, tk.PhotoImage(file='tup logo 1.png'))
