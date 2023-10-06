@@ -510,9 +510,9 @@ class RequestPage(tk.Frame):
         self.submit_button.grid(row=9, column=1, rowspan=10, padx=35, pady=5, sticky='se')
 
         # Create the cancel button
-        cancel_button = tk.Button(form_frame, text='Clear', font=('inter', 18), command=self.clear_form,
+        clear_button = tk.Button(form_frame, text='Clear', font=('inter', 18), command=self.clear_form,
                                   bg='#5D1C1C', fg='#FFFFFF', width=8)
-        cancel_button.grid(row=9, column=0, rowspan=10, padx=70, pady=5, sticky='sw')
+        clear_button.grid(row=9, column=1, rowspan=10, padx=10, pady=5, sticky='s')
 
         # Create the cancel button
         cancel_button = tk.Button(form_frame, text='Cancel', font=('inter', 18), command=self.cancel_form,
@@ -603,7 +603,14 @@ class RequestPage(tk.Frame):
         self.controller.show_frame("MainMenu_Page")
 
     def clear_form(self):
-        pass
+        # Clear the input fields
+        self.id_var.set("")  # Clear the ID input field
+        self.FirstName_var.set("")  # Clear the First Name input field
+        self.MiddleName_var.set("")  # Clear the Middle Name input field
+        self.LastName_var.set("")  # Clear the Last Name input field
+        self.course_var.set("")  # Clear the Course selection
+        self.type_var.set("")  # Clear the Type of Request selection
+        self.role_var.set("")  # Clear the Role in University selection
 
 
 class MakerPage(tk.Frame):
