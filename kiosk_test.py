@@ -603,7 +603,8 @@ class RequestPage(tk.Frame):
         self.controller.show_frame("MainMenu_Page")
 
     def clear_form(self):
-       
+        pass
+
 
 class MakerPage(tk.Frame):
     def __init__(self, parent, controller):
