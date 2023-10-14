@@ -278,7 +278,7 @@ class Win:
             self.image_c.paste(rotated_department_text_image,
                                (8, 78))  # Adjust x and y positions as needed
 
-            # Save the drawn signature as an image
+            # Save the drawn sign   ature as an image
             signature_filename = f'signatures/signature_{self.ID.get()}.png'
             self.signature_canvas.postscript(file=signature_filename, colormode='color')
 
