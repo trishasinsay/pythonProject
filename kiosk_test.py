@@ -397,7 +397,7 @@ class ValidationPage(tk.Frame):
                 host="localhost",
                 user="root",
                 password="Root030702",
-                port=3306,
+                port=330,
                 database="kiosk_db"
             )
 
@@ -749,16 +749,16 @@ class RequestPage(tk.Frame):
             # Replace with your database credentials
             db = mysql.connector.connect(
                 host="localhost",
-                user="your_username",
-                password="your_password",
-                database="your_database_name"
+                user="root",
+                password="Root030702",
+                database="kiosk_db"
             )
 
             cursor = db.cursor()
 
             # Replace with your database table and column names
-            query = "INSERT INTO your_table (email, id_number, role) VALUES (%s, %s, %s)"
-            values = (email, id_number, role)
+            query = "INSERT INTO tbl_request (Role, Email, StudentID, Request, Reason, LastName, FirstName, MiddleName, ContactNo, Program) VALUES (%s, %s, %s,%s, %s, %s,%s, %s, %s,  %s)"
+            values = (self.role_combobox, self.email_entry, self.id_number_entry, self.request_combobox, self.reason_entry, self.lastname_entry, self.firstname_entry, self.middlename_entry, self.contact_entry, self.program_combobox)
 
             cursor.execute(query, values)
             db.commit()
