@@ -8,29 +8,33 @@ from PIL import Image, ImageTk
 from tkinter import ttk
 import pytesseract
 import numpy as np
+from tkinter import font as tkFont
 import subprocess
 import re
+import os
 import io
 
 class SampleApp(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
+        # Get the screen width and height
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        # Set the window's size to match the screen dimensions
+        self.geometry(f"{screen_width}x{screen_height}")
+
         container = tk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
-        container.grid_rowconfigure(0, weight=0)
-        container.grid_columnconfigure(0, weight=0)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
         for F in (StartPage, MainMenu_Page, RequestPage, ValidationPage, MakerPage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
-            frame.grid(row=0, column=0, sticky="nsew")
-
-            # put all of the pages in the same location;
-            # the one on the top of the stacking order
-            # will be the one that is visible.
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame("StartPage")
@@ -45,45 +49,96 @@ class StartPage(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         self.controller.title('TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES-CAVITE')
-        self.controller.state('zoomed')
         self.controller.iconphoto(False, tk.PhotoImage(file='tup logo 1.png'))
 
-        # Create a canvas that covers the entire frame
-        self.background_image = tk.PhotoImage(file='bg.png')
-        self.canvas = tk.Canvas(self, width=self.winfo_screenwidth(), height=self.winfo_screenheight())
-        self.canvas.pack()
+        self.canvas = tk.Canvas(self)
+        self.canvas.pack(expand=True, fill="both")
 
-        # Place the background image on the canvas
+        self.canvas.config(borderwidth=0, highlightthickness=0)
+
+        # Load the background image using PIL
+        self.bg_image = Image.open('bg.png')
+        self.update_background()
+
+        # Bind the canvas to the window resizing
+        self.bind("<Configure>", self.on_resize)
+
+    def on_resize(self, event):
+        self.update_background()
+
+    def update_background(self):
+        # Get the screen width and height
+        screen_width = self.winfo_width()
+        screen_height = self.winfo_height()
+
+        # Calculate the scaling factors for width and height
+        width_scale = screen_width / self.bg_image.width
+        height_scale = screen_height / self.bg_image.height
+
+        # Resize the background image
+        resized_bg_image = self.bg_image.resize((screen_width, screen_height))
+
+        # Create a PhotoImage object from the resized image
+        self.background_image = ImageTk.PhotoImage(resized_bg_image)
+
+        # Update the canvas image
         self.canvas.create_image(0, 0, image=self.background_image, anchor=tk.NW)
 
-        # Create a label in front of the background image
-        # Create a transparent label using a Canvas
-        heading_text = 'WELCOME'
-        heading_label = self.canvas.create_text(self.winfo_screenwidth() // 2, self.winfo_screenheight() // 3,
-                                                text=heading_text, font=('caveat brush', 130),
-                                                fill='#820505')  # Set the text color
 
-        # Place the label in the center of the frame (adjust the values as needed)
-        # Since we use canvas.create_text, there's no need for anchor=tk.CENTER
-        # and we can directly set x and y coordinates.
-        # Adjust the y-coordinate to change the vertical position of the text.
-        # For example, self.winfo_screenheight() // 2 - 50 will move the text 50 pixels up.
-        self.canvas.coords(heading_label, self.winfo_screenwidth() // 3 + 140, self.winfo_screenheight() // 3 + 60)
+        # Load the image
+        image_path = 'logo.jpg'  # Replace with the path to your image
+        if os.path.exists(image_path):
+            image = Image.open(image_path)
 
-        sub_heading_label = 'TUPCIANS!'
-        sub_heading_label = self.canvas.create_text(self.winfo_screenwidth() // 2, self.winfo_screenheight() // 3,
-                                                text=sub_heading_label, font=('inter', 40, 'bold'),
-                                                fill='black')  # Set the text color
-        self.canvas.coords(sub_heading_label, self.winfo_screenwidth() // 2 + 210, self.winfo_screenheight() // 3 + 160)
+            # Calculate the position of the image in the upper right corner
+            image_width, image_height = image.size
+            screen_width = self.winfo_screenwidth()
+            screen_height = self.winfo_screenheight()
+            image_x = screen_width - 170
+            image_y = 2
 
-        # Create the "Get Started" button
-        get_started_button = tk.Button(self, text='Get Started', font=('inter', 20, 'bold'),
-                                       command=self.on_get_started_button_click, bg='#5D1C1C', fg='white',
-                                       width=20, height= 2)
+            # Create a PhotoImage object from the cropped image
+            image = ImageTk.PhotoImage(image)
 
-        # Place the button below the sub-heading label
-        self.canvas.create_window(self.winfo_screenwidth() // 2 + 210, self.winfo_screenheight() // 2 + 215,
-                                  window=get_started_button)
+            # Create a label to display the image with a transparent background
+            image_label = tk.Label(self, image=image, bg="#666666")
+            image_label.place(x=image_x, y=image_y)
+
+            # Keep a reference to the image to prevent it from being garbage collected
+            image_label.image = image
+        else:
+            print(f"Image file not found: {image_path}")
+
+        # Add header text below the header rectangle
+        header_text_below = self.canvas.create_text(screen_width // 2, 230, text="WELCOME", fill="white",
+                                                    font=("Cambria", 110, 'bold'))
+
+        # Add subheader text below the header text
+        subheader_text = self.canvas.create_text(screen_width // 1.55, 335, text="TUPCIANS!", fill="#CF0F13",
+                                                     font=('bangers', 70, 'bold'))
+
+        # Add another text element below the subheader text
+        note_text = self.canvas.create_text(screen_width // 1.45, 450,
+                                            text=" Welcome! students, faculties, and Alumni, to our ID Maker Kiosk! We are thrilled to\n offer this convenient service to help you obtain your IDs. Whether you're a new or need\n a replacement ID, we're here to assist you.",
+                                            fill="white",
+                                            font=("roboto", 15))
+
+        # Add clickable text button
+        clickable_text = self.canvas.create_text(screen_width // 1.3, 580, text="Get Started >>", fill="white",
+                                                 font=("Brush Script MT", 60))
+        self.canvas.tag_bind(clickable_text, "<Button-1>", self.on_clickable_text_click)
+
+        # Add clickable text button
+        link = self.canvas.create_text(screen_width // 6 - 100, 50, text="Tupcuitc.com", fill="white",
+                                       font=("Bitter", 20, 'bold', 'italic'))
+
+        self.canvas.tag_bind(link, "<Button-1>", self.on_link_text_click)
+
+    def on_link_text_click(self, event):
+        self.on_get_started_button_click()
+
+    def on_clickable_text_click(self, event):
+        self.on_get_started_button_click()
 
     def on_get_started_button_click(self):
         # Switch to the main menu with three buttons
@@ -93,67 +148,93 @@ class StartPage(tk.Frame):
 
 class MainMenu_Page(tk.Frame):
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent, bg='#D8D8D8')
+        tk.Frame.__init__(self, parent)
         self.controller = controller
+        self.button_click_in_progress = False  # Initialize the flag
 
-        # Create a label for the RegistrationPage
-        request_label = tk.Label(self, text="MAIN MENU", font=('caveat brush', 55), bg='#D8D8D8',
-                                 fg='#5D1C1C')
-        request_label.grid(row=0, column=1, pady=40, padx=20, sticky='N')
+        # Load the background image using PIL
+        self.bg_image = Image.open('mainmenu.png')  # Replace with your background image path
+        self.bg_photo = ImageTk.PhotoImage(self.bg_image)
 
-        # Add a label below the button
-        label1 = tk.Label(self, text='REQUEST ID', font=('inter', 25, 'bold'), background='#D8D8D8')
-        label1.grid(row=0, column=0, pady=150, padx=135, sticky='nw')
+        # Create a Label to display the background image
+        self.bg_label = tk.Label(self, image=self.bg_photo)
+        self.bg_label.place(relwidth=1, relheight=1)
 
-        label2 = tk.Label(self, text='ID MAKER', font=('inter', 25, 'bold'), background='#D8D8D8')
-        label2.grid(row=0, column=1, pady=150, padx=60, sticky='n')
+        # Bind the window resize event to update the background image
+        self.bind("<Configure>", self.on_resize)
 
-        label3 = tk.Label(self, text='VALIDATION', font=('inter', 25, 'bold'), background='#D8D8D8')
-        label3.grid(row=0, column=2, pady=150, padx=50, sticky='n')
+        # Create three rounded buttons
+        button1 = RoundedButton(self, text="ID REQUEST FORM", command=self.on_button1_click)
+        button2 = RoundedButton(self, text="ID MAKER",  command=self.on_button2_click)
+        button3 = RoundedButton(self, text="ID VALIDATION", command=self.on_button3_click)
+        back_button = tk.Button(self, text='BACK', font=('Cambria', 22, "bold"), command=self.on_back_button_click)
 
-
-        # Load image for the button
-        image1 = tk.PhotoImage(file='validation.png')
-        image2 = tk.PhotoImage(file='requesting.png')
-        image3 = tk.PhotoImage(file='maker.png')
-
-
-        # Create the button with the background color and image on top
-        button1 = tk.Button(self, image=image2, compound=tk.TOP, bg='#5D1C1C', height=370, width=300,
-                            command=self.on_button2_click, bd=0)
-        button1.grid(row=0, column=0, pady=200, padx=90, sticky='w')
-
-        button2 = tk.Button(self, image=image3, compound=tk.TOP, bg='#5D1C1C', height=370, width=330,
-                            command=self.on_button3_click, bd=0)
-        button2.grid(row=0, column=1, pady=200, padx=20, sticky='w')
-
-        button3 = tk.Button(self, image=image1, compound=tk.TOP, bg='#5D1C1C', height=370, width=300,
-                            command=self.on_button1_click, bd=0)
-        button3.grid(row=0, column=2, pady=200, padx=70, sticky='e')
-
-
-        # Set the image as button attribute to avoid garbage collection
-        button1.image = image1
-        button2.image = image2
-        button3.image = image3
+        # Use grid to place widgets
+        button1.grid(row=0, column=2, sticky="nsew", padx=250, pady=80)
+        button2.grid(row=1, column=2, sticky="nsew", padx=250, pady=0)
+        button3.grid(row=2, column=2, sticky="nsew", padx=250, pady=60)
+        back_button.grid(row=3, column=2, sticky="nsew", padx=250, pady=10)
 
     def on_button1_click(self):
-        # Switch to the main menu with three buttons
+        if self.button_click_in_progress:
+            return  # Return without taking action
+        self.button_click_in_progress = True
+
+        request_page_frame = RequestPage(self.controller, self.controller)
+        request_page_frame.pack(fill='both', expand=True)
+        self.controller.show_frame('RequestPage')
+
+        # Set the flag back to False when the action is complete
+        self.button_click_in_progress = False
+
+    def on_button2_click(self):
+        if self.button_click_in_progress:
+            return
+        self.button_click_in_progress = True
+
+        maker_page_frame = MakerPage(self.controller, self.controller)
+        maker_page_frame.pack(fill='both', expand=True)
+        self.controller.show_frame('MakerPage')
+
+        self.button_click_in_progress = False
+
+    def on_button3_click(self):
+        if self.button_click_in_progress:
+            return
+        self.button_click_in_progress = True
+
         validation_page_frame = ValidationPage(self.controller, self.controller)
         validation_page_frame.pack(fill='both', expand=True)
         self.controller.show_frame('ValidationPage')
 
-    def on_button2_click(self):
-        # Switch to the main menu with three buttons
-        request_page_frame = ValidationPage(self.controller, self.controller)
-        request_page_frame.pack(fill='both', expand=True)
-        self.controller.show_frame('RequestPage')
+        self.button_click_in_progress = False
 
-    def on_button3_click(self):
-        # Handle button 3 click event
-        maker_page_frame = MakerPage(self.controller, self.controller)
-        maker_page_frame.pack(fill='both', expand=True)
-        self.controller.show_frame('MakerPage')
+    def on_back_button_click(self):
+        # Switch back to the StartPage
+        self.controller.show_frame('StartPage')
+
+    def on_resize(self, event):
+        # Update the background image size when the window is resized
+        screen_width = self.winfo_width()
+        screen_height = self.winfo_height()
+        resized_bg_image = self.bg_image.resize((screen_width, screen_height))
+        self.bg_photo = ImageTk.PhotoImage(resized_bg_image)
+        self.bg_label.configure(image=self.bg_photo)
+
+class RoundedButton(tk.Button):
+    def __init__(self, master=None, **kwargs):
+        tk.Button.__init__(self, master, **kwargs)
+        self.config(relief=tk.SOLID)
+        self.config(borderwidth=1)
+        self.config(highlightthickness=2)
+        self.config(padx=10)
+        self.config(pady=10)
+        self.config(bg="#2C302E")
+        self.config(activebackground="white")
+        self.config(foreground="white")
+        self.config(font=("cambria", 22, "bold"))
+        self.config(cursor="hand2")
+        self.config(width=50, height=1)  # Adjust the width as needed
 
 class ValidationPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -232,7 +313,7 @@ class ValidationPage(tk.Frame):
         if not self.camera_preview_initialized:
             try:
                 # Open the camera (replace '0' with the correct camera index or device name)
-                self.cap = cv2.VideoCapture(1)  # Use '1' for a secondary camera
+                self.cap = cv2.VideoCapture(0)  # Use '1' for a secondary camera
                 if not self.cap.isOpened():
                     raise Exception("Camera not opened")
                 self.camera_preview_initialized = True
@@ -315,13 +396,14 @@ class ValidationPage(tk.Frame):
             db = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="030702",
-                database="db_test1"
+                password="Root030702",
+                port=3306,
+                database="kiosk_db"
             )
 
             cursor = db.cursor()
 
-            cursor.execute("SELECT id_number FROM tbl_test1")
+            cursor.execute("SELECT Student No. FROM enrollment-list")
             results = cursor.fetchall()
 
             db.close()
@@ -407,210 +489,324 @@ class ValidationPage(tk.Frame):
         self.controller.frames["ValidationPage"].initialize_camera_preview()
         self.controller.show_frame('ValidationPage')
 
+
 class RequestPage(tk.Frame):
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent, bg='#EFEFEF')  # Set the background color for the entire page
+        tk.Frame.__init__(self, parent)
         self.controller = controller
 
-        # Create a colored square background frame to hold the labels and input fields
-        form_frame = tk.Frame(self, bg='#5D1C1C', padx=50, pady=50)
-        form_frame.pack(expand=True, fill=tk.BOTH)  # Allow the form_frame to fill available space
+        self.canvas = tk.Canvas(self)
+        self.canvas.pack(expand=True, fill="both")
 
-        # Create a label for the RegistrationPage
-        request_label = tk.Label(form_frame, text="REQUEST FORM", font=('inter', 30, 'bold'), bg='#5D1C1C',
-                                 fg='#FFFFFF')
-        request_label.grid(row=0, column=0, columnspan=3, padx=450, pady=18, sticky='NW')
+        self.canvas.config(borderwidth=0, highlightthickness=0)
 
-        note_label = tk.Label(form_frame,
-                              text="Kindly provide the complete information needed in this online form.\n\n"
-                                   "There is a 150 pesos ID fee to be paid at the Cashier's Office for the replacement.",
-                              font=('inter', 15), bg='#5D1C1C', fg='#FFFFFF')
-        note_label.grid(row=2, column=1, padx=70, pady=30, sticky='w')
+        # Load the background image using PIL
+        self.bg_image = Image.open('req_bg.png')
+        self.update_background()
 
-        id_label = tk.Label(form_frame, text='ID Number:', font=('inter', 18), bg='#5D1C1C', fg='#FFFFFF')
-        id_label.grid(row=4, column=0, padx=10, pady=15, sticky='e')
+        # Bind the canvas to the window resizing
+        self.bind("<Configure>", self.on_resize)
 
-        self.id_var = tk.StringVar()
-        self.id_entry = tk.Entry(form_frame, font=('inter', 14), width=25, textvariable=self.id_var)
-        self.id_entry.grid(row=4, column=1, padx=10, pady=15, sticky='w')
+    def on_resize(self, event):
+        self.update_background()
 
-        FirstName_label = tk.Label(form_frame, text='Last Name:', font=('inter', 18), bg='#5D1C1C', fg='#FFFFFF')
-        FirstName_label.grid(row=5, column=0, padx=10, pady=15, sticky='e')
+    def update_background(self):
+        # Get the screen width and height
+        screen_width = self.winfo_width()
+        screen_height = self.winfo_height()
 
-        self.FirstName_var = tk.StringVar()
-        self.FirstName_entry = tk.Entry(form_frame, font=('inter', 14), width=25, textvariable=self.FirstName_var)
-        self.FirstName_entry.grid(row=5, column=1, padx=10, pady=15, sticky='w')
+        # Calculate the scaling factors for width and height
+        width_scale = screen_width / self.bg_image.width
+        height_scale = screen_height / self.bg_image.height
 
-        MiddleName_label = tk.Label(form_frame, text='First Name:', font=('inter', 18), bg='#5D1C1C', fg='#FFFFFF')
-        MiddleName_label.grid(row=6, column=0, padx=10, pady=15, sticky='e')
+        # Resize the background image
+        resized_bg_image = self.bg_image.resize((screen_width, screen_height))
 
-        self.MiddleName_var = tk.StringVar()
-        self.MiddleName_entry = tk.Entry(form_frame, font=('inter', 14), width=25, textvariable=self.MiddleName_var)
-        self.MiddleName_entry.grid(row=6, column=1, padx=10, pady=15, sticky='w')
+        # Create a PhotoImage object from the resized image
+        self.background_image = ImageTk.PhotoImage(resized_bg_image)
 
-        LastName_label = tk.Label(form_frame, text='Middle Name:', font=('inter', 18), bg='#5D1C1C', fg='#FFFFFF')
-        LastName_label.grid(row=7, column=0, padx=10, pady=15, sticky='e')
+        # Update the canvas image
+        self.canvas.create_image(0, 0, image=self.background_image, anchor=tk.NW)
 
-        self.LastName_var = tk.StringVar()
-        self.LastName_entry = tk.Entry(form_frame, font=('inter', 14), width=25, textvariable=self.LastName_var)
-        self.LastName_entry.grid(row=7, column=1, padx=10, pady=15, sticky='w')
+        # Add a header rectangle
+        header_rectangle = self.canvas.create_rectangle(0, 0, screen_width, 50, fill="black")
 
-        course_label = tk.Label(form_frame, text='Course:', font=('inter', 18), bg='#5D1C1C', fg='#FFFFFF')
-        course_label.grid(row=8, column=0, padx=10, pady=15, sticky='e')
+        # Add header text inside the rectangle
+        header_text = self.canvas.create_text(screen_width // 2 + 30, 25, text="TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES-CAVITE", fill="white",
+                                              font=("Cambria", 20))
 
-        self.course_var = tk.StringVar()
-        course_combobox = ttk.Combobox(form_frame, textvariable=self.course_var,
-                                       values=["Bachelor of Science in Civil Engineering (BSCE)",
-                                               "Bachelor of Science in Electrical Engineering (BSEE)",
-                                               "Bachelor of Science in Mechanical Engineering (BSME)",
-                                               "Bachelor of Science in Industrial Education major in Information and Communications Technology (BSIE-ICT)",
-                                               "Bachelor of Science in Industrial Education major in Home Economics (BSIE-HE)",
-                                               "Bachelor of Science in Industrial Education major in Industrial Arts (BSIE-IA)",
-                                               "Bachelor of Technical Vocational Teacher Education major in Computer Programming (BTTE-CP)",
-                                               "Bachelor of Technical Vocational Teacher Education major in Electrical (BTTE-EI)",
-                                               "Bachelor of Technical Vocational Teacher Education major in Automotive (BTTE-Au)",
-                                               "Bachelor of Technical Vocational Teacher Education major in Heating, Ventilation and Airconditioning Technology (BTTE-HVACT)",
-                                               "Bachelor of Technical Vocational Teacher Education major in Electronics (BTTE-E)",
-                                               "Bachelor of Graphics Technology in Architecture (BGT-AT)",
-                                               "Bachelor of Engineering Technology major in Civil Technology (BET-CT)",
-                                               "Bachelor of Engineering Technology major in Electrical Technology (BET-ET)",
-                                               "Bachelor of Engineering Technology major in Electronics Technology (BET-EsET)",
-                                               "Bachelor of Engineering Technology major in Computer Engineering Technology (BET-CoET)",
-                                               "Bachelor of Engineering Technology major in Mechanical Technology (BET-MT)",
-                                               "Bachelor of Engineering Technology major in Powerplant Technology (BET-PPT)",
-                                               "Bachelor of Engineering Technology major in Automotive Technology (BET-AT)"],
-                                       font=('inter', 12), state="readonly", width=110)
-        course_combobox.grid(row=8, column=1, padx=10, pady=15, sticky="w")
+        # Load the image you want to display
+        image_path = 'tup.jpg'  # Replace with your image file path
+        if os.path.exists(image_path):
+            image = Image.open(image_path)
+            image.thumbnail((90, 40))  # Adjust the size as needed
+            image = ImageTk.PhotoImage(image)
 
-        request_type_label = tk.Label(form_frame, text='Type of Request:', font=('inter', 18), bg='#5D1C1C',
-                                      fg='#FFFFFF')
-        request_type_label.grid(row=4, column=1, padx=450, pady=15, sticky='e')
+            # Create a label to display the image
+            image_label = tk.Label(self, image=image, bg="white", borderwidth=0, highlightthickness=0)
+            image_label.photo = image
+            image_label.place(x=260, y=6)  # Adjust the position as needed
 
-        self.type_var = tk.StringVar()
-        request_type_combobox = ttk.Combobox(form_frame, textvariable=self.type_var,
-                                             values=["REPLACEMENT(For old students with lost ID",
-                                                     "REPLACEMENT(For old students with damaged ID that needs replacement",
-                                                     "New ID"],
-                                             font=('inter', 12), state="readonly", width=45)
-        request_type_combobox.grid(row=4, column=1, padx=20, pady=15, sticky="e")
 
-        role_label = tk.Label(form_frame, text='Role in University:', font=('inter', 18), bg='#5D1C1C',
-                              fg='#FFFFFF')
-        role_label.grid(row=5, column=1, padx=440, pady=15, sticky='e')
+        # Add header text below the header rectangle
+        header_text_below = self.canvas.create_text(screen_width // 2, 90, text="REQUEST FORM", fill="white",
+                                                    font=('IBMPlexMono-Bold.ttf', 25, 'bold'))
 
-        self.role_var = tk.StringVar()
-        role_combobox = ttk.Combobox(form_frame, textvariable=self.role_var,
-                                     values=["Student", "Faculty", "Alumni"],
-                                     font=('inter', 12), state="readonly", width=25)
-        role_combobox.grid(row=5, column=1, padx=190, pady=15, sticky="e")
+        # Add header text below the header rectangle
+        notetext_below = self.canvas.create_text(screen_width // 2 + 20, 130, text="Kindly provide the complete information needed in this online form.", fill="white",
+                                                    font=('IBM Plex Mono', 14))
 
-        # Create the Proceed button, but set it to be disabled initially
-        self.submit_button = tk.Button(form_frame, text='Submit', font=('inter', 18), command=self.show_confirmation,
-                                       bg='#5D1C1C', fg='#FFFFFF', width=8, state=tk.DISABLED)
-        self.submit_button.grid(row=9, column=1, rowspan=10, padx=35, pady=5, sticky='se')
+        # Add header text below the header rectangle
+        note_text_below = self.canvas.create_text(screen_width // 2 + 20, 160, text="There is a 150 pesos ID fee to be paid at the Cashier's Office for the replacement.",
+                                                 fill="white", font=('IBM Plex Mono', 14))
 
-        # Create the cancel button
-        clear_button = tk.Button(form_frame, text='Clear', font=('inter', 18), command=self.clear_form,
-                                  bg='#5D1C1C', fg='#FFFFFF', width=8)
-        clear_button.grid(row=9, column=1, rowspan=10, padx=10, pady=5, sticky='s')
+        # Create a label for the user's role in university
+        role_label = tk.Label(self, text="Role in University:", font=("Arial", 18), bg="#470000", fg='white')
+        role_label.place(x=100, y=210)
 
-        # Create the cancel button
-        cancel_button = tk.Button(form_frame, text='Cancel', font=('inter', 18), command=self.cancel_form,
-                                  bg='#5D1C1C', fg='#FFFFFF', width=8)
-        cancel_button.grid(row=9, column=0, rowspan=10, padx=35, pady=5, sticky='sw')
+        role_choices = ["Select Role", "Student", "Faculty", "Staff", "Alumni"]
+        self.role_combobox = ttk.Combobox(self, values=role_choices, state='readonly', font=("Arial", 16))
+        self.role_combobox.current(0)
+        self.role_combobox.place(x=370, y=210, width=750, height=30)
+        self.role_combobox.set("Select Role")  # Set the default value
 
-        # Bind the validation function to the variables
-        self.id_var.trace_add("write", self.validate_fields)
-        self.FirstName_var.trace_add("write", self.validate_fields)
-        self.MiddleName_var.trace_add("write", self.validate_fields)
-        self.LastName_var.trace_add("write", self.validate_fields)
-        self.course_var.trace_add("write", self.validate_fields)
-        self.type_var.trace_add("write", self.validate_fields)
-        self.role_var.trace_add("write", self.validate_fields)
+        # Create a label for the user's email
+        email_label = tk.Label(self, text="GSFE Email:", font=("Arial", 18), bg="#470000", fg='white')
+        email_label.place(x=100, y=250)
 
-    def validate_fields(self, *args):
-        # Check if all required fields are non-empty
-        if all([self.id_var.get(), self.FirstName_var.get(), self.MiddleName_var.get(), self.LastName_var.get(),
-                self.course_var.get(), self.type_var.get(), self.role_var.get()]):
-            # Enable the "Submit" button if all fields are filled
-            self.submit_button.config(state=tk.NORMAL)
-        else:
-            # Disable the "Submit" button if any field is empty
-            self.submit_button.config(state=tk.DISABLED)
+        # Create an entry widget for the user's email
+        self.email_entry = tk.Entry(self, font=("Arial", 16))
+        self.email_entry.place(x=370, y=250, width=750, height=30)
 
-    def show_confirmation(self):
-        # Retrieve the form data from the input fields
-        # Gather the entered details from the input fields
-        id = self.id_entry.get()
-        FirstName = self.FirstName_entry.get()
-        MiddleName = self.MiddleName_entry.get()
-        LastName = self.LastName_entry.get()
-        selected_course = self.course_var.get()
-        selected_role = self.role_var.get()
-        selected_request = self.type_var.get()
+        # Create a label for the student ID
+        id_number_label = tk.Label(self, text="Student ID:", font=("Arial", 18), bg="#470000", fg='white')
+        id_number_label.place(x=100, y=290)
 
-        # Create a message for the confirmation box
-        confirmation_message = f"ID Number: {id}\nFirst Name: {FirstName}\nMiddle Name: {MiddleName}\nLast Name: {LastName}\nCourse: {selected_course}\nRole in the University: {selected_role}\nType of Request: {selected_request}\nIs the information correct?"
+        # Create an entry widget for the student ID
+        self.id_number_entry = tk.Entry(self, font=("Arial", 16))
+        self.id_number_entry.place(x=370, y=290,  width=750, height=30)
 
-        # Show a message box to confirm the entered details
-        user_confirmation = messagebox.askyesno("Confirmation of Request", confirmation_message)
+        # Create a label for the student request
+        request_type_label = tk.Label(self, text="Type of ID Request:", font=("Arial", 18), bg="#470000", fg='white')
+        request_type_label.place(x=100, y=330)
 
-        if user_confirmation:
-            # Save the data to the database
-            self.save_data_to_database(id, FirstName, MiddleName, LastName, selected_course, selected_role,
-                                       selected_request)
+        request_choices = ["Type of ID Request", "REPLACEMENT (for old students with lost ID)", "REPLACEMENT (for old students with damaged ID that needs replacement)", "UNCLAIMED", "Alumni"]
+        self.request_combobox = ttk.Combobox(self, values=request_choices, state='readonly', font=("Arial", 16))
+        self.request_combobox.current(0)
+        self.request_combobox.place(x=370, y=330, width=750, height=30)
+        self.request_combobox.set("Select Type of Request")  # Set the default value
 
-            # Show success message and navigate to the next page
-            messagebox.showinfo("Success", "Data has been submitted.")
-            self.controller.show_frame("MainMenu_Page")
+        # Create a label for the reason
+        reason_label = tk.Label(self, text="Reason:", font=("Arial", 18), bg="#470000",
+                                      fg='white')
+        reason_label.place(x=100, y=370)
 
-            # Clear the input fields
-            self.id_entry.delete(0, tk.END)
-            self.FirstName_entry.delete(0, tk.END)
-            self.MiddleName_entry.delete(0, tk.END)
-            self.LastName_entry.delete(0, tk.END)
-            self.course_var.set("")
-            self.role_var.set("")
-            self.type_var.set("")
+        self.reason_entry = tk.Entry(self, font=("Arial", 16))
+        self.reason_entry.place(x=370, y=370, width=750, height=30)
 
-        else:
-            return None
+        # Create a label for the student lastname
+        lastname_label = tk.Label(self, text="Last Name:", font=("Arial", 18), bg="#470000", fg='white')
+        lastname_label.place(x=100, y=410)
 
-    def save_data_to_database(self, id, FirstName, MiddleName, LastName, selected_course, selected_role,
-                              selected_request):
-        # Establish a connection to the MySQL database
-        db_request = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="030702",
-            database="db_test"
+        # Create an entry widget for the student lastname
+        self.lastname_entry = tk.Entry(self, font=("Arial", 16))
+        self.lastname_entry.place(x=370, y=410,  width=750, height=30)
+
+        # Create a label for the student firstname
+        firstname_label = tk.Label(self, text="First Name:", font=("Arial", 18), bg="#470000", fg='white')
+        firstname_label.place(x=100, y=450)
+
+        # Create an entry widget for the student firstname
+        self.firstname_entry = tk.Entry(self, font=("Arial", 16))
+        self.firstname_entry.place(x=370, y=450, width=750, height=30)
+
+        # Create a label for the student middle name
+        middlename_label = tk.Label(self, text="Middle Name:", font=("Arial", 18), bg="#470000", fg='white')
+        middlename_label.place(x=100, y=490)
+
+        # Create an entry widget for the student middle name
+        self.middlename_entry = tk.Entry(self, font=("Arial", 16))
+        self.middlename_entry.place(x=370, y=490,  width=750, height=30)
+
+        # Create a label for the student contact number
+        contact_label = tk.Label(self, text="Contact No.:", font=("Arial", 18), bg="#470000", fg='white')
+        contact_label.place(x=100, y=530)
+
+        # Create an entry widget for the student contact number
+        self.contact_entry = tk.Entry(self, font=("Arial", 16))
+        self.contact_entry.place(x=370, y=530,  width=750, height=30)
+
+        # Create a label for the student program or course
+        program_label = tk.Label(self, text="Program:", font=("Arial", 18), bg="#470000", fg='white')
+        program_label.place(x=100, y=570)
+
+        program_choices =["Program",
+                             "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA", "BTTE-CP",
+                             "BTTE-EI", "BTTE-AU", "BTTE-HVACT", "BTTE-E", "BGT-AT", "BET-CT",
+                             "BET-ET", "BET-ESET", "BET-COET", "BET-MT", "BET-PPT", "BET-AT"
+                        ]
+        self.program_combobox = ttk.Combobox(self, values=program_choices, state='readonly', font=('Arial', 16))
+        self.program_combobox.current(0)
+        self.program_combobox.place(x=370, y=570,  width=750, height=30)
+        self.program_combobox.set("Select your Program")  # Set the default value
+
+        # Create the "Clear" button
+        clear_button = tk.Button(self, text="Clear", font=("IBM Plex Mono", 14, 'bold'), command=self.clear_form,
+                                  width=12)
+        clear_button.place(relx=0.06, rely=0.95, anchor="sw")
+
+        # Create the "Submit" button
+        submit_button = tk.Button(self, text="Submit", font=("IBM Plex Mono", 14, 'bold'), command=self.submit_form, width=12)
+        submit_button.place(relx=0.83, rely=0.95, anchor="se")
+
+        # Create the "Cancel" button
+        cancel_button = tk.Button(self, text="Cancel", font=("IBM Plex Mono", 14, 'bold'), command=self.cancel_form, width=12)
+        cancel_button.place(relx=0.96, rely=0.95, anchor="se")
+
+        # ... Continue with the rest of your code ...
+
+    def submit_form(self):
+        role = self.role_combobox.get()
+        email = self.email_entry.get()
+        id_number = self.id_number_entry.get()
+        request = self.request_combobox.get()
+        reason = self.reason_entry.get()
+        lastname = self.lastname_entry.get()
+        firstname = self.firstname_entry.get()
+        middlename = self.middlename_entry.get()
+        contact = self.contact_entry.get()
+        program = self.program_combobox.get()
+
+        # Create a list of all entry widgets
+        entry_widgets = [
+            self.email_entry, self.id_number_entry, self.reason_entry,
+            self.lastname_entry, self.firstname_entry, self.middlename_entry,
+            self.contact_entry
+        ]
+
+        # Create a list of corresponding dropdowns
+        dropdowns = [
+            self.role_combobox, self.request_combobox, self.program_combobox
+        ]
+
+        # Initialize a flag to check if any field is empty
+        any_empty = False
+
+        # Check each entry widget for empty fields
+        for entry_widget in entry_widgets:
+            if not entry_widget.get():
+                entry_widget.config(highlightbackground="red")
+                any_empty = True
+            else:
+                entry_widget.config(highlightbackground=None)
+
+        # Check each dropdown for default values
+        for dropdown in dropdowns:
+            if dropdown.get() == dropdown["values"][0]:
+                dropdown.set("")  # Clear the default value
+                dropdown.configure(state="readonly")
+                any_empty = True
+            else:
+                dropdown.config(highlightbackground=None)
+
+        if any_empty:
+            # Show an error message and return
+            self.message_L.config(text="Please fill in all the required fields", fg='red')
+            return
+
+        # Construct the confirmation message
+        confirmation_message = (
+            f"Role: {role}\nEmail: {email}\nStudent No.: {id_number}\nType of Request: {request}\nReason: {reason}\nLast Name: {lastname}"
+            f"\nFirst Name: {firstname}\nMiddle Name: {middlename}\nContact No.: {contact}\nProgram: {program}\n\nAre all the information provided is correct?"
         )
-        cursor = db_request.cursor()
 
-        # Define the SQL query to insert data into the database table
-        insert_query = "INSERT INTO tbl_request (id_number, FirstName, MiddleName, LastName, course, role, request) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        # Display a confirmation message box
+        user_response = messagebox.askquestion("Confirmation", confirmation_message)
 
-        # Execute the query with the provided values
-        data = (id, FirstName, MiddleName, LastName, selected_course, selected_role, selected_request)
-        cursor.execute(insert_query, data)
+        if user_response == 'yes':
+            # User clicked "OK," so save the data to the database
+            if self.save_to_database(email, id_number, role):
+                messagebox.showinfo("Success", "Data saved successfully.")
+            else:
+                messagebox.showerror("Error", "Failed to save data to the database.")
+        else:
+            # User clicked "Cancel"
+            messagebox.showinfo("Cancelled", "Data not saved")
 
-        # Commit the changes to the database and close the connection
-        db_request.commit()
-        db_request.close()
+    def validate_email(self):
+        # Get the email from the entry field
+        email = self.email_entry.get()
+
+        if not email:
+            # The email field is empty, so show an error message and change the border color
+            self.email_entry.config(highlightbackground="red")
+        else:
+            # The email field is filled, so reset the border color to the default
+            self.email_entry.config(highlightbackground=None)
+
+    def save_to_database(self, email, id_number, role):
+        try:
+            # Replace with your database credentials
+            db = mysql.connector.connect(
+                host="localhost",
+                user="your_username",
+                password="your_password",
+                database="your_database_name"
+            )
+
+            cursor = db.cursor()
+
+            # Replace with your database table and column names
+            query = "INSERT INTO your_table (email, id_number, role) VALUES (%s, %s, %s)"
+            values = (email, id_number, role)
+
+            cursor.execute(query, values)
+            db.commit()
+            db.close()
+            return True
+        except Exception as e:
+            print("Database error:", str(e))
+            return False
+
+        self.role_combobox.set('')
+        self.role_combobox.current(0)
+
+        self.email_entry.delete(0, 'end')  # Clear the email Entry widget
+        self.id_number_entry.delete(0, 'end')  # Clear the id_number Entry widget
+
+        self.request_combobox.set('')
+        self.request_combobox.current(0)
+
+        self.reason_entry.delete(0, 'end')  # Clear the reason Entry widget
+        self.lastname_entry.delete(0, 'end')  # Clear the lastname Entry widget
+        self.firstname_entry.delete(0, 'end')  # Clear the firstname Entry widget
+        self.middlename_entry.delete(0, 'end')  # Clear the middlename Entry widget
+        self.contact_entry.delete(0, 'end')  # Clear the contact Entry widget
+
+        self.program_combobox.set('')
+        self.program_combobox.current(0)
 
     def cancel_form(self):
-        # Switch back to the main menu page
-        self.controller.show_frame("MainMenu_Page")
+        self.controller.show_frame("StartPage")
 
     def clear_form(self):
-        # Clear the input fields
-        self.id_var.set("")  # Clear the ID input field
-        self.FirstName_var.set("")  # Clear the First Name input field
-        self.MiddleName_var.set("")  # Clear the Middle Name input field
-        self.LastName_var.set("")  # Clear the Last Name input field
-        self.course_var.set("")  # Clear the Course selection
-        self.type_var.set("")  # Clear the Type of Request selection
-        self.role_var.set("")  # Clear the Role in University selection
+        self.role_combobox.set('')
+        self.role_combobox.current(0)
+
+        self.email_entry.delete(0, 'end')  # Clear the email Entry widget
+        self.id_number_entry.delete(0, 'end')  # Clear the id_number Entry widget
+
+        self.request_combobox.set('')
+        self.request_combobox.current(0)
+
+        self.reason_entry.delete(0, 'end')  # Clear the reason Entry widget
+        self.lastname_entry.delete(0, 'end')  # Clear the lastname Entry widget
+        self.firstname_entry.delete(0, 'end')  # Clear the firstname Entry widget
+        self.middlename_entry.delete(0, 'end')  # Clear the middlename Entry widget
+        self.contact_entry.delete(0, 'end')  # Clear the contact Entry widget
+
+        self.program_combobox.set('')
+        self.program_combobox.current(0)
 
 
 class MakerPage(tk.Frame):
