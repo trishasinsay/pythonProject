@@ -119,7 +119,7 @@ class StartPage(tk.Frame):
 
         # Add another text element below the subheader text
         note_text = self.canvas.create_text(screen_width // 1.45, 450,
-                                            text=" Welcome! students, faculties, and Alumni, to our ID Maker Kiosk! We are thrilled to\n offer this convenient service to help you obtain your IDs. Whether you're a new or need\n a replacement ID, we're here to assist you.",
+                                            text=" Welcome, students, faculties, and alumni, to our ID Maker Kiosk! We are thrilled to\n offer this convenient service to help you obtain your IDs. Whether you're new or need\n a replacement ID, we're here to assist you.",
                                             fill="white",
                                             font=("roboto", 15))
 
@@ -283,9 +283,6 @@ class ValidationPage(tk.Frame):
         # Create a variable to control whether scanning should continue
         self.continue_scanning = True
 
-
-
-
         # Define the background color for the scan button
         scan_button_bg_color = '#5D1C1C'
 
@@ -313,7 +310,7 @@ class ValidationPage(tk.Frame):
         if not self.camera_preview_initialized:
             try:
                 # Open the camera (replace '0' with the correct camera index or device name)
-                self.cap = cv2.VideoCapture(0)  # Use '1' for a secondary camera
+                self.cap = cv2.VideoCapture(1)  # Use '1' for a secondary camera
                 if not self.cap.isOpened():
                     raise Exception("Camera not opened")
                 self.camera_preview_initialized = True
@@ -397,13 +394,15 @@ class ValidationPage(tk.Frame):
                 host="localhost",
                 user="root",
                 password="Root030702",
-                port=330,
+                port=330,  # Use an integer for the port
                 database="kiosk_db"
             )
 
             cursor = db.cursor()
 
-            cursor.execute("SELECT Student No. FROM enrollment-list")
+            # The SQL query should be written with backticks for field names with spaces and specify the table name.
+            cursor.execute("SELECT `StudentNo.` FROM enrollment_list")
+
             results = cursor.fetchall()
 
             db.close()
@@ -489,7 +488,6 @@ class ValidationPage(tk.Frame):
         self.controller.frames["ValidationPage"].initialize_camera_preview()
         self.controller.show_frame('ValidationPage')
 
-
 class RequestPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -504,8 +502,11 @@ class RequestPage(tk.Frame):
         self.bg_image = Image.open('req_bg.png')
         self.update_background()
 
+
         # Bind the canvas to the window resizing
         self.bind("<Configure>", self.on_resize)
+
+        self.validate_fields()
 
     def on_resize(self, event):
         self.update_background()
@@ -560,21 +561,24 @@ class RequestPage(tk.Frame):
         note_text_below = self.canvas.create_text(screen_width // 2 + 20, 160, text="There is a 150 pesos ID fee to be paid at the Cashier's Office for the replacement.",
                                                  fill="white", font=('IBM Plex Mono', 14))
 
+
         # Create a label for the user's role in university
         role_label = tk.Label(self, text="Role in University:", font=("Arial", 18), bg="#470000", fg='white')
         role_label.place(x=100, y=210)
 
-        role_choices = ["Select Role", "Student", "Faculty", "Staff", "Alumni"]
-        self.role_combobox = ttk.Combobox(self, values=role_choices, state='readonly', font=("Arial", 16))
-        self.role_combobox.current(0)
-        self.role_combobox.place(x=370, y=210, width=750, height=30)
-        self.role_combobox.set("Select Role")  # Set the default value
+        self.role_var = tk.StringVar()
+        role_combobox = ttk.Combobox(self, textvariable=self.role_var,
+                                     values=[ "Student", "Faculty", "Alumni"],
+                                     font=("Arial", 16), state="readonly")
+        role_combobox.place(x=370, y=210, width=750, height=30)
+        role_combobox.set("Select your Role in University")  # Set the default value
 
         # Create a label for the user's email
         email_label = tk.Label(self, text="GSFE Email:", font=("Arial", 18), bg="#470000", fg='white')
         email_label.place(x=100, y=250)
 
         # Create an entry widget for the user's email
+        self.email_var = tk.StringVar()
         self.email_entry = tk.Entry(self, font=("Arial", 16))
         self.email_entry.place(x=370, y=250, width=750, height=30)
 
@@ -583,6 +587,7 @@ class RequestPage(tk.Frame):
         id_number_label.place(x=100, y=290)
 
         # Create an entry widget for the student ID
+        self.id_number_var = tk.StringVar()
         self.id_number_entry = tk.Entry(self, font=("Arial", 16))
         self.id_number_entry.place(x=370, y=290,  width=750, height=30)
 
@@ -590,17 +595,22 @@ class RequestPage(tk.Frame):
         request_type_label = tk.Label(self, text="Type of ID Request:", font=("Arial", 18), bg="#470000", fg='white')
         request_type_label.place(x=100, y=330)
 
-        request_choices = ["Type of ID Request", "REPLACEMENT (for old students with lost ID)", "REPLACEMENT (for old students with damaged ID that needs replacement)", "UNCLAIMED", "Alumni"]
-        self.request_combobox = ttk.Combobox(self, values=request_choices, state='readonly', font=("Arial", 16))
-        self.request_combobox.current(0)
-        self.request_combobox.place(x=370, y=330, width=750, height=30)
-        self.request_combobox.set("Select Type of Request")  # Set the default value
+        self.type_var = tk.StringVar()
+        request_type_combobox = ttk.Combobox(self, textvariable=self.type_var,
+                                             values=[
+                                                    "REPLACEMENT(For old students with lost ID",
+                                                     "REPLACEMENT(For old students with damaged ID that needs replacement",
+                                                     "New ID"],
+                                             font=("Arial", 16), state="readonly")
+        request_type_combobox.place(x=370, y=330, width=750, height=30)
+        request_type_combobox.set("Select Type of ID Request")
 
         # Create a label for the reason
         reason_label = tk.Label(self, text="Reason:", font=("Arial", 18), bg="#470000",
                                       fg='white')
         reason_label.place(x=100, y=370)
 
+        self.reason_var = tk.StringVar()
         self.reason_entry = tk.Entry(self, font=("Arial", 16))
         self.reason_entry.place(x=370, y=370, width=750, height=30)
 
@@ -609,6 +619,7 @@ class RequestPage(tk.Frame):
         lastname_label.place(x=100, y=410)
 
         # Create an entry widget for the student lastname
+        self.lastname_var = tk.StringVar()
         self.lastname_entry = tk.Entry(self, font=("Arial", 16))
         self.lastname_entry.place(x=370, y=410,  width=750, height=30)
 
@@ -617,6 +628,7 @@ class RequestPage(tk.Frame):
         firstname_label.place(x=100, y=450)
 
         # Create an entry widget for the student firstname
+        self.firstname_var = tk.StringVar()
         self.firstname_entry = tk.Entry(self, font=("Arial", 16))
         self.firstname_entry.place(x=370, y=450, width=750, height=30)
 
@@ -625,6 +637,7 @@ class RequestPage(tk.Frame):
         middlename_label.place(x=100, y=490)
 
         # Create an entry widget for the student middle name
+        self.middlename_var = tk.StringVar()
         self.middlename_entry = tk.Entry(self, font=("Arial", 16))
         self.middlename_entry.place(x=370, y=490,  width=750, height=30)
 
@@ -633,6 +646,7 @@ class RequestPage(tk.Frame):
         contact_label.place(x=100, y=530)
 
         # Create an entry widget for the student contact number
+        self.contact_var = tk.StringVar()
         self.contact_entry = tk.Entry(self, font=("Arial", 16))
         self.contact_entry.place(x=370, y=530,  width=750, height=30)
 
@@ -640,15 +654,19 @@ class RequestPage(tk.Frame):
         program_label = tk.Label(self, text="Program:", font=("Arial", 18), bg="#470000", fg='white')
         program_label.place(x=100, y=570)
 
-        program_choices =["Program",
-                             "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA", "BTTE-CP",
-                             "BTTE-EI", "BTTE-AU", "BTTE-HVACT", "BTTE-E", "BGT-AT", "BET-CT",
-                             "BET-ET", "BET-ESET", "BET-COET", "BET-MT", "BET-PPT", "BET-AT"
-                        ]
-        self.program_combobox = ttk.Combobox(self, values=program_choices, state='readonly', font=('Arial', 16))
-        self.program_combobox.current(0)
-        self.program_combobox.place(x=370, y=570,  width=750, height=30)
-        self.program_combobox.set("Select your Program")  # Set the default value
+        self.course_var = tk.StringVar()
+        course_combobox = ttk.Combobox(self, textvariable=self.course_var,
+                                       values=[
+                                                        "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA",
+                                                        "BTTE-CP",
+                                                        "BTTE-EI", "BTTE-AU", "BTTE-HVACT", "BTTE-E", "BGT-AT",
+                                                        "BET-CT",
+                                                        "BET-ET", "BET-ESET", "BET-COET", "BET-MT", "BET-PPT", "BET-AT"
+                                                        ],
+                                       font=('Arial', 16), state="readonly")
+        course_combobox.place(x=370, y=570,  width=750, height=30)
+        course_combobox.set("Select your Program")
+
 
         # Create the "Clear" button
         clear_button = tk.Button(self, text="Clear", font=("IBM Plex Mono", 14, 'bold'), command=self.clear_form,
@@ -656,157 +674,125 @@ class RequestPage(tk.Frame):
         clear_button.place(relx=0.06, rely=0.95, anchor="sw")
 
         # Create the "Submit" button
-        submit_button = tk.Button(self, text="Submit", font=("IBM Plex Mono", 14, 'bold'), command=self.submit_form, width=12)
-        submit_button.place(relx=0.83, rely=0.95, anchor="se")
+        self.submit_button = tk.Button(self, text="Submit", font=("IBM Plex Mono", 14, 'bold'), command=self.submit_form, width=12)
+        self.submit_button.place(relx=0.83, rely=0.95, anchor="se")
 
         # Create the "Cancel" button
         cancel_button = tk.Button(self, text="Cancel", font=("IBM Plex Mono", 14, 'bold'), command=self.cancel_form, width=12)
         cancel_button.place(relx=0.96, rely=0.95, anchor="se")
 
-        # ... Continue with the rest of your code ...
+        # Bind the validation function to the variables
+        self.role_var.trace_add("write", self.validate_fields)
+        self.email_var.trace_add("write", self.validate_fields)
+        self.id_number_var.trace_add("write", self.validate_fields)
+        self.type_var.trace_add("write", self.validate_fields)
+        self.reason_var.trace_add("write", self.validate_fields)
+        self.lastname_var.trace_add("write", self.validate_fields)
+        self.firstname_var.trace_add("write", self.validate_fields)
+        self.middlename_var.trace_add("write", self.validate_fields)
+        self.contact_var.trace_add("write", self.validate_fields)
+        self.course_var.trace_add("write", self.validate_fields)
+
+        # Call the validate_fields method to initially enable or disable the "Submit" button
+        self.validate_fields()
+
+
+    def validate_fields(self, *args):
+        # Check if all required fields are non-empty
+        if all([(self.role_var.get() != 'Select your Role in University' and self.email_entry.get() and self.id_number_entry.get() and self.type_var.get() != 'Select Type of ID Request' and
+                        self.reason_entry.get() and self.lastname_entry.get() and self.firstname_entry.get() and self.middlename_entry.get() and self.contact_entry.get() and
+                        self.course_var.get() != 'Select your Program')]):
+            # Enable the "Submit" button if all fields are filled
+            self.submit_button.config(state=tk.NORMAL)
+
+        else:
+            # Disable the "Submit" button if any field is empty
+            self.submit_button.config(state=tk.DISABLED)
 
     def submit_form(self):
-        role = self.role_combobox.get()
+        selected_role = self.role_var.get()
+        selected_request =self.type_var.get()
+        reason = self.reason_entry.get()
         email = self.email_entry.get()
         id_number = self.id_number_entry.get()
-        request = self.request_combobox.get()
-        reason = self.reason_entry.get()
         lastname = self.lastname_entry.get()
         firstname = self.firstname_entry.get()
         middlename = self.middlename_entry.get()
         contact = self.contact_entry.get()
-        program = self.program_combobox.get()
+        selected_course = self.course_var.get()
 
-        # Create a list of all entry widgets
-        entry_widgets = [
-            self.email_entry, self.id_number_entry, self.reason_entry,
-            self.lastname_entry, self.firstname_entry, self.middlename_entry,
-            self.contact_entry
-        ]
+        # Check the length of the contact number
+        if contact and (len(contact) < 11 or len(contact) > 11):
+            messagebox.showerror("Invalid Contact Number", "Contact number should be 11 digits long.")
+        else:
+            # Create a message for the confirmation box
+            confirmation_message = f"Role in University: {selected_role}\nType of ID Request: {selected_request}\nReason: {reason}\nEmail: {email}\nStudent ID Number: {id_number}\nLast Name: {lastname}\nFirst Name: {firstname}\nMiddle Name: {middlename}\nContact No.: {contact}\nProgram: {selected_course}\nIs the information correct?"
 
-        # Create a list of corresponding dropdowns
-        dropdowns = [
-            self.role_combobox, self.request_combobox, self.program_combobox
-        ]
+            # Show a message box to confirm the entered details
+            user_confirmation = messagebox.askyesno("Confirmation of Request", confirmation_message)
 
-        # Initialize a flag to check if any field is empty
-        any_empty = False
+            if user_confirmation:
+                # Save the data to the database
+                self.save_data_to_database(selected_role, selected_request, reason, email, id_number, lastname,
+                                           firstname, middlename, contact, selected_course)
 
-        # Check each entry widget for empty fields
-        for entry_widget in entry_widgets:
-            if not entry_widget.get():
-                entry_widget.config(highlightbackground="red")
-                any_empty = True
+                # Show success message and navigate to the next page
+                messagebox.showinfo("Success", "Data has been submitted.")
+                self.controller.show_frame("MainMenu_Page")
+
+                # Clear the input fields
+                self.role_var.set('Select your Role in University')
+                self.type_var.set("Select your Type of ID Request")
+                self.reason_entry.delete(0, tk.END)
+                self.email_entry.delete(0, tk.END)
+                self.id_number_entry.delete(0, tk.END)
+                self.lastname_entry.delete(0, tk.END)
+                self.firstname_entry.delete(0, tk.END)
+                self.middlename_entry.delete(0, tk.END)
+                self.contact_entry.delete(0, tk.END)
+                self.course_var.set("Select your Program")
+
             else:
-                entry_widget.config(highlightbackground=None)
+                return None
 
-        # Check each dropdown for default values
-        for dropdown in dropdowns:
-            if dropdown.get() == dropdown["values"][0]:
-                dropdown.set("")  # Clear the default value
-                dropdown.configure(state="readonly")
-                any_empty = True
-            else:
-                dropdown.config(highlightbackground=None)
-
-        if any_empty:
-            # Show an error message and return
-            self.message_L.config(text="Please fill in all the required fields", fg='red')
-            return
-
-        # Construct the confirmation message
-        confirmation_message = (
-            f"Role: {role}\nEmail: {email}\nStudent No.: {id_number}\nType of Request: {request}\nReason: {reason}\nLast Name: {lastname}"
-            f"\nFirst Name: {firstname}\nMiddle Name: {middlename}\nContact No.: {contact}\nProgram: {program}\n\nAre all the information provided is correct?"
+    def save_data_to_database(self, Role, Email, StudentID, Request, Reason, LastName, FirstName, MiddleName, ContactNo, Program):
+        # Establish a connection to the MySQL database
+        db_request = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="Root030702",
+            port=330,
+            database="kiosk_db"
         )
+        cursor = db_request.cursor()
 
-        # Display a confirmation message box
-        user_response = messagebox.askquestion("Confirmation", confirmation_message)
+        # Define the SQL query to insert data into the database table
+        insert_query = "INSERT INTO tb_request (Role, Email, StudentID, Request, Reason, LastName, FirstName, MiddleName, ContactNo, Program) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
-        if user_response == 'yes':
-            # User clicked "OK," so save the data to the database
-            if self.save_to_database(email, id_number, role):
-                messagebox.showinfo("Success", "Data saved successfully.")
-            else:
-                messagebox.showerror("Error", "Failed to save data to the database.")
-        else:
-            # User clicked "Cancel"
-            messagebox.showinfo("Cancelled", "Data not saved")
+        # Execute the query with the provided values
+        data = (Role, Email, StudentID, Request, Reason, LastName, FirstName, MiddleName, ContactNo, Program)
+        cursor.execute(insert_query, data)
 
-    def validate_email(self):
-        # Get the email from the entry field
-        email = self.email_entry.get()
-
-        if not email:
-            # The email field is empty, so show an error message and change the border color
-            self.email_entry.config(highlightbackground="red")
-        else:
-            # The email field is filled, so reset the border color to the default
-            self.email_entry.config(highlightbackground=None)
-
-    def save_to_database(self, email, id_number, role):
-        try:
-            # Replace with your database credentials
-            db = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="Root030702",
-                database="kiosk_db"
-            )
-
-            cursor = db.cursor()
-
-            # Replace with your database table and column names
-            query = "INSERT INTO tbl_request (Role, Email, StudentID, Request, Reason, LastName, FirstName, MiddleName, ContactNo, Program) VALUES (%s, %s, %s,%s, %s, %s,%s, %s, %s,  %s)"
-            values = (self.role_combobox, self.email_entry, self.id_number_entry, self.request_combobox, self.reason_entry, self.lastname_entry, self.firstname_entry, self.middlename_entry, self.contact_entry, self.program_combobox)
-
-            cursor.execute(query, values)
-            db.commit()
-            db.close()
-            return True
-        except Exception as e:
-            print("Database error:", str(e))
-            return False
-
-        self.role_combobox.set('')
-        self.role_combobox.current(0)
-
-        self.email_entry.delete(0, 'end')  # Clear the email Entry widget
-        self.id_number_entry.delete(0, 'end')  # Clear the id_number Entry widget
-
-        self.request_combobox.set('')
-        self.request_combobox.current(0)
-
-        self.reason_entry.delete(0, 'end')  # Clear the reason Entry widget
-        self.lastname_entry.delete(0, 'end')  # Clear the lastname Entry widget
-        self.firstname_entry.delete(0, 'end')  # Clear the firstname Entry widget
-        self.middlename_entry.delete(0, 'end')  # Clear the middlename Entry widget
-        self.contact_entry.delete(0, 'end')  # Clear the contact Entry widget
-
-        self.program_combobox.set('')
-        self.program_combobox.current(0)
+        # Commit the changes to the database and close the connection
+        db_request.commit()
+        db_request.close()
 
     def cancel_form(self):
-        self.controller.show_frame("StartPage")
+        # Switch back to the main menu page
+        self.controller.show_frame("MainMenu_Page")
 
     def clear_form(self):
-        self.role_combobox.set('')
-        self.role_combobox.current(0)
-
-        self.email_entry.delete(0, 'end')  # Clear the email Entry widget
-        self.id_number_entry.delete(0, 'end')  # Clear the id_number Entry widget
-
-        self.request_combobox.set('')
-        self.request_combobox.current(0)
-
-        self.reason_entry.delete(0, 'end')  # Clear the reason Entry widget
-        self.lastname_entry.delete(0, 'end')  # Clear the lastname Entry widget
-        self.firstname_entry.delete(0, 'end')  # Clear the firstname Entry widget
-        self.middlename_entry.delete(0, 'end')  # Clear the middlename Entry widget
-        self.contact_entry.delete(0, 'end')  # Clear the contact Entry widget
-
-        self.program_combobox.set('')
-        self.program_combobox.current(0)
+        # Clear the input fields
+        self.role_var.set('Select your Role in University')
+        self.type_var.set("Select your Type of ID Request")
+        self.reason_entry.delete(0, tk.END)
+        self.email_entry.delete(0, tk.END)
+        self.id_number_entry.delete(0, tk.END)
+        self.lastname_entry.delete(0, tk.END)
+        self.firstname_entry.delete(0, tk.END)
+        self.middlename_entry.delete(0, tk.END)
+        self.contact_entry.delete(0, tk.END)
+        self.course_var.set("Select your Program")
 
 
 class MakerPage(tk.Frame):
