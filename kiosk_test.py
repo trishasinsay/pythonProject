@@ -8,11 +8,11 @@ from PIL import Image, ImageTk
 from tkinter import ttk
 import pytesseract
 import numpy as np
-from tkinter import font as tkFont
 import subprocess
 import re
 import os
 import io
+
 
 class SampleApp(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -31,7 +31,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, MainMenu_Page, RequestPage, ValidationPage, MakerPage):
+        for F in (StartPage, MainMenu_Page, RequestPage, MakerPage, ValidationPage, MatchingPage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -43,6 +43,7 @@ class SampleApp(tk.Tk):
         '''Show a frame for the given page name'''
         frame = self.frames[page_name]
         frame.tkraise()
+
 
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -110,7 +111,7 @@ class StartPage(tk.Frame):
             print(f"Image file not found: {image_path}")
 
         # Add header text below the header rectangle
-        header_text_below = self.canvas.create_text(screen_width // 2, 230, text="WELCOME", fill="white",
+        header_text_below = self.canvas.create_text(screen_width // 2, 220, text="WELCOME", fill="white",
                                                     font=("Cambria", 110, 'bold'))
 
         # Add subheader text below the header text
@@ -170,7 +171,7 @@ class MainMenu_Page(tk.Frame):
         back_button = tk.Button(self, text='BACK', font=('Cambria', 22, "bold"), command=self.on_back_button_click)
 
         # Use grid to place widgets
-        button1.grid(row=0, column=2, sticky="nsew", padx=250, pady=70)
+        button1.grid(row=0, column=2, sticky="nsew", padx=250, pady=80)
         button2.grid(row=1, column=2, sticky="nsew", padx=250, pady=0)
         button3.grid(row=2, column=2, sticky="nsew", padx=250, pady=60)
         back_button.grid(row=3, column=2, sticky="nsew", padx=250, pady=10)
@@ -220,6 +221,7 @@ class MainMenu_Page(tk.Frame):
         resized_bg_image = self.bg_image.resize((screen_width, screen_height))
         self.bg_photo = ImageTk.PhotoImage(resized_bg_image)
         self.bg_label.configure(image=self.bg_photo)
+
 
 class RoundedButton(tk.Button):
     def __init__(self, master=None, **kwargs):
@@ -295,12 +297,12 @@ class RequestPage(tk.Frame):
             # Create a label to display the image
             image_label = tk.Label(self, image=image, bg="white", borderwidth=0, highlightthickness=0)
             image_label.photo = image
-            image_label.place(x=260, y=6)  # Adjust the position as needed
+            image_label.place(x=110, y=6)  # Adjust the position as needed
 
 
         # Add header text below the header rectangle
         header_text_below = self.canvas.create_text(screen_width // 2, 90, text="REQUEST FORM", fill="white",
-                                                    font=('IBMPlexMono-Bold.ttf', 25, 'bold'))
+                                                    font=('cambria', 25, 'bold'))
 
         # Add header text below the header rectangle
         notetext_below = self.canvas.create_text(screen_width // 2 + 20, 130, text="Kindly provide the complete information needed in this online form.", fill="white",
@@ -310,112 +312,113 @@ class RequestPage(tk.Frame):
         note_text_below = self.canvas.create_text(screen_width // 2 + 20, 160, text="There is a 150 pesos ID fee to be paid at the Cashier's Office for the replacement.",
                                                  fill="white", font=('IBM Plex Mono', 14))
 
-
         # Create a label for the user's role in university
-        role_label = tk.Label(self, text="Role in University:", font=("Arial", 18), bg="#470000", fg='white')
-        role_label.place(x=100, y=210)
+        role_label = self.canvas.create_text(screen_width // 1.5 - 719, 225, text="Role in University:",
+                                             font=("Arial", 14), fill='white')
 
         self.role_var = tk.StringVar()
         role_combobox = ttk.Combobox(self, textvariable=self.role_var,
-                                     values=[ "Student", "Faculty", "Alumni"],
-                                     font=("Arial", 16), state="readonly")
-        role_combobox.place(x=370, y=210, width=750, height=30)
+                                     values=["Student", "Faculty", "Alumni"],
+                                     font=("Arial", 12), state="readonly")
+        role_combobox.place(x=370, y=210, width=300, height=25)
         role_combobox.set("Select your Role in University")  # Set the default value
 
         # Create a label for the user's email
-        email_label = tk.Label(self, text="GSFE Email:", font=("Arial", 18), bg="#470000", fg='white')
-        email_label.place(x=100, y=250)
+        email_label = self.canvas.create_text(screen_width // 1.54 - 719, 265, text="GSFE Email:", font=("Arial", 14),
+                                              fill='white')
 
         # Create an entry widget for the user's email
         self.email_var = tk.StringVar()
-        self.email_entry = tk.Entry(self, font=("Arial", 16))
-        self.email_entry.place(x=370, y=250, width=750, height=30)
+        self.email_entry = tk.Entry(self, font=("Arial", 12))
+        self.email_entry.place(x=370, y=250, width=600, height=25)
 
         # Create a label for the student ID
-        id_number_label = tk.Label(self, text="Student ID:", font=("Arial", 18), bg="#470000", fg='white')
-        id_number_label.place(x=100, y=290)
+        id_number_label = self.canvas.create_text(screen_width // 1.55 - 719, 305, text="Student ID:",
+                                                  font=("Arial", 14),
+                                                  fill='white')
 
         # Create an entry widget for the student ID
         self.id_number_var = tk.StringVar()
-        self.id_number_entry = tk.Entry(self, font=("Arial", 16))
-        self.id_number_entry.place(x=370, y=290,  width=750, height=30)
+        self.id_number_entry = tk.Entry(self, font=("Arial", 12))
+        self.id_number_entry.place(x=370, y=290, width=300, height=25)
 
         # Create a label for the student request
-        request_type_label = tk.Label(self, text="Type of ID Request:", font=("Arial", 18), bg="#470000", fg='white')
-        request_type_label.place(x=100, y=330)
+        request_type_label = self.canvas.create_text(screen_width // 1.49 - 718, 345, text="Type of ID Request:",
+                                                     font=("Arial", 14), fill='white')
 
         self.type_var = tk.StringVar()
         request_type_combobox = ttk.Combobox(self, textvariable=self.type_var,
                                              values=[
-                                                    "REPLACEMENT(For old students with lost ID",
-                                                     "REPLACEMENT(For old students with damaged ID that needs replacement",
-                                                     "New ID"],
-                                             font=("Arial", 16), state="readonly")
-        request_type_combobox.place(x=370, y=330, width=750, height=30)
+                                                 "REPLACEMENT(For old students with lost ID",
+                                                 "REPLACEMENT(For old students with damaged ID that needs replacement",
+                                                 "New ID"],
+                                             font=("Arial", 12), state="readonly")
+        request_type_combobox.place(x=370, y=330, width=600, height=25)
         request_type_combobox.set("Select Type of ID Request")
 
         # Create a label for the reason
-        reason_label = tk.Label(self, text="Reason:", font=("Arial", 18), bg="#470000",
-                                      fg='white')
-        reason_label.place(x=100, y=370)
+        reason_label = self.canvas.create_text(screen_width // 1.57 - 719, 385, text="Reason:", font=("Arial", 14),
+                                               fill='white')
 
         self.reason_var = tk.StringVar()
-        self.reason_entry = tk.Entry(self, font=("Arial", 16))
-        self.reason_entry.place(x=370, y=370, width=750, height=30)
+        self.reason_entry = tk.Entry(self, font=("Arial", 12))
+        self.reason_entry.place(x=370, y=370, width=700, height=25)
 
         # Create a label for the student lastname
-        lastname_label = tk.Label(self, text="Last Name:", font=("Arial", 18), bg="#470000", fg='white')
-        lastname_label.place(x=100, y=410)
+        lastname_label = self.canvas.create_text(screen_width // 1.55 - 718, 425, text="Last Name:", font=("Arial", 14),
+                                                 fill='white')
 
         # Create an entry widget for the student lastname
         self.lastname_var = tk.StringVar()
-        self.lastname_entry = tk.Entry(self, font=("Arial", 16))
-        self.lastname_entry.place(x=370, y=410,  width=750, height=30)
+        self.lastname_entry = tk.Entry(self, font=("Arial", 12))
+        self.lastname_entry.place(x=370, y=410, width=550, height=25)
 
         # Create a label for the student firstname
-        firstname_label = tk.Label(self, text="First Name:", font=("Arial", 18), bg="#470000", fg='white')
-        firstname_label.place(x=100, y=450)
+        firstname_label = self.canvas.create_text(screen_width // 1.55 - 718, 465, text="First Name:",
+                                                  font=("Arial", 14),
+                                                  fill='white')
 
         # Create an entry widget for the student firstname
         self.firstname_var = tk.StringVar()
-        self.firstname_entry = tk.Entry(self, font=("Arial", 16))
-        self.firstname_entry.place(x=370, y=450, width=750, height=30)
+        self.firstname_entry = tk.Entry(self, font=("Arial", 12))
+        self.firstname_entry.place(x=370, y=450, width=550, height=25)
 
         # Create a label for the student middle name
-        middlename_label = tk.Label(self, text="Middle Name:", font=("Arial", 18), bg="#470000", fg='white')
-        middlename_label.place(x=100, y=490)
+        middlename_label = self.canvas.create_text(screen_width // 1.53 - 718, 505, text="Middle Name:",
+                                                   font=("Arial", 14),
+                                                   fill='white')
 
         # Create an entry widget for the student middle name
         self.middlename_var = tk.StringVar()
-        self.middlename_entry = tk.Entry(self, font=("Arial", 16))
-        self.middlename_entry.place(x=370, y=490,  width=750, height=30)
+        self.middlename_entry = tk.Entry(self, font=("Arial", 12))
+        self.middlename_entry.place(x=370, y=490, width=550, height=25)
 
         # Create a label for the student contact number
-        contact_label = tk.Label(self, text="Contact No.:", font=("Arial", 18), bg="#470000", fg='white')
-        contact_label.place(x=100, y=530)
+        contact_label = self.canvas.create_text(screen_width // 1.54 - 718, 545, text="Contact No.:",
+                                                font=("Arial", 14),
+                                                fill='white')
 
         # Create an entry widget for the student contact number
         self.contact_var = tk.StringVar()
-        self.contact_entry = tk.Entry(self, font=("Arial", 16))
-        self.contact_entry.place(x=370, y=530,  width=750, height=30)
+        self.contact_entry = tk.Entry(self, font=("Arial", 12))
+        self.contact_entry.place(x=370, y=530, width=300, height=25)
 
         # Create a label for the student program or course
-        program_label = tk.Label(self, text="Program:", font=("Arial", 18), bg="#470000", fg='white')
-        program_label.place(x=100, y=570)
+        program_label = self.canvas.create_text(screen_width // 1.56 - 718, 585, text="Program:", font=("Arial", 14),
+                                                fill='white')
 
         self.course_var = tk.StringVar()
         course_combobox = ttk.Combobox(self, textvariable=self.course_var,
                                        values=[
-                                                        "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA",
-                                                        "BTTE-CP",
-                                                        "BTTE-EI", "BTTE-AU", "BTTE-HVACT", "BTTE-E", "BGT-AT",
-                                                        "BET-CT",
-                                                        "BET-ET", "BET-ESET", "BET-COET", "BET-MT", "BET-PPT", "BET-AT"
-                                                        ],
-                                       font=('Arial', 16), state="readonly")
-        course_combobox.place(x=370, y=570,  width=750, height=30)
+                                           "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA",
+                                           "BTTE-CP",
+                                           "BTTE-EI", "BTTE-AU", "BTTE-HVACT", "BTTE-E", "BGT-AT",
+                                           "BET-CT",
+                                           "BET-ET", "BET-ESET", "BET-COET", "BET-MT", "BET-PPT", "BET-AT"
+                                       ],
+                                       font=('Arial', 12), state="readonly")
+        course_combobox.place(x=370, y=570, width=550, height=25)
         course_combobox.set("Select your Program")
-
 
         # Create the "Clear" button
         clear_button = tk.Button(self, text="Clear", font=("IBM Plex Mono", 14, 'bold'), command=self.clear_form,
@@ -547,8 +550,6 @@ class MakerPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        self.controller.title('TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES-CAVITE')
-        self.controller.iconphoto(False, tk.PhotoImage(file='tup logo 1.png'))
 
         self.canvas = tk.Canvas(self)
         self.canvas.pack(expand=True, fill="both")
@@ -631,7 +632,7 @@ class MakerPage(tk.Frame):
 
         # Create a button instead of clickable text
         submit_button = tk.Button(self, text="Submit", font=("Bitter", 20, 'bold', 'italic'),
-                                bg='#641010', fg='white', width=20, height= 2, command=self.on_get_started_button_click)
+                                bg='#641010', fg='white', width=20, height= 2, command=self.validate_and_submit)
         submit_button.place(x=screen_width // 2.35 + 82 ,y=screen_height // 2 + 155)
 
         # Add clickable text button
@@ -663,49 +664,139 @@ class MakerPage(tk.Frame):
         main_menu_page_frame.pack(fill='both', expand=True)
         self.controller.show_frame('MainMenu_Page')
 
+    def validate_and_submit(self):
+        # Get the text from the entry widget
+        input_text = self.entry_var.get()
 
+        # Define a regular expression pattern to match the format "A-XXXXXX"
+        pattern = r'^[A]-\d{6}$'
+
+        if re.match(pattern, input_text):
+            # The input matches the format, you can proceed
+            subprocess.Popen(['python', 'id_front.py'])
+            self.entry_var.set('')
+        else:
+            # The input does not match the format, show a messagebox
+            messagebox.showerror("Invalid Format", "Please enter the right OTP code format you recieved in your email.")
 
 
 class ValidationPage(tk.Frame):
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent, bg='#D8D8D8')
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+
+        self.canvas = tk.Canvas(self)
+        self.canvas.pack(expand=True, fill="both")
+
+        self.canvas.config(borderwidth=0, highlightthickness=0)
+
+        # Load the background image using PIL
+        self.bg_image = Image.open('bg.png')
+        self.update_background()
+
+        # Bind the canvas to the window resizing
+        self.bind("<Configure>", self.on_resize)
+
+    def on_resize(self, event):
+        self.update_background()
+
+    def update_background(self):
+        # Get the screen width and height
+        screen_width = self.winfo_width()
+        screen_height = self.winfo_height()
+
+        # Calculate the scaling factors for width and height
+        width_scale = screen_width / self.bg_image.width
+        height_scale = screen_height / self.bg_image.height
+
+        # Resize the background image
+        resized_bg_image = self.bg_image.resize((screen_width, screen_height))
+
+        # Create a PhotoImage object from the resized image
+        self.background_image = ImageTk.PhotoImage(resized_bg_image)
+
+        # Update the canvas image
+        self.canvas.create_image(0, 0, image=self.background_image, anchor=tk.NW)
+
+        # Load the image
+        image_path = 'logo.jpg'  # Replace with the path to your image
+        if os.path.exists(image_path):
+            image = Image.open(image_path)
+
+            # Calculate the position of the image in the upper right corner
+            image_width, image_height = image.size
+            screen_width = self.winfo_screenwidth()
+            screen_height = self.winfo_screenheight()
+            image_x = screen_width - 170
+            image_y = 2
+
+            # Create a PhotoImage object from the cropped image
+            image = ImageTk.PhotoImage(image)
+
+            # Create a label to display the image with a transparent background
+            image_label = tk.Label(self, image=image, bg="#666666")
+            image_label.place(x=image_x, y=image_y)
+
+            # Keep a reference to the image to prevent it from being garbage collected
+            image_label.image = image
+        else:
+            print(f"Image file not found: {image_path}")
+
+        # Add header text below the header rectangle
+        header_text_below = self.canvas.create_text(screen_width // 2, 230, text="WELCOME", fill="white",
+                                                    font=("Cambria", 110, 'bold'))
+
+        # Add subheader text below the header text
+        subheader_text = self.canvas.create_text(screen_width // 1.55, 335, text="TUPCIANS!", fill="#CF0F13",
+                                                 font=('bangers', 70, 'bold'))
+
+        # Create a button instead of clickable text
+        scan_button = tk.Button(self, text="TAP TO SCAN YOUR COR", font=("cambria", 28, 'bold'),
+                                bg='#661112', fg='white', width=27, height=1, command=self.on_scan_button_click)
+        scan_button.place(x=screen_width // 2.35 - 100, y=screen_height // 2 + 120)
+
+        # Add clickable text button
+        link = self.canvas.create_text(screen_width // 6 - 100, 50, text="Tupcuitc.com", fill="white",
+                                       font=("Bitter", 20, 'bold', 'italic'))
+
+        self.canvas.tag_bind(link, "<Button-1>", self.on_link_text_click)
+
+        # Load the button image
+        button_image = Image.open("back.png")
+        button_photo = ImageTk.PhotoImage(button_image)
+
+        # Create a transparent button
+        button = tk.Button(self, image=button_photo, bg='#141516', borderwidth=0, highlightthickness=0,
+                           command=self.on_back_button_click)
+        button.photo = button_photo  # Keep a reference to the image
+        button.place(x=screen_width // 2.2 + 650, y=screen_height // 2 + 220)  # Adjust the position as needed
+
+    # Function to execute when the button is clicked
+    def on_back_button_click(self):
+        self.on_get_started_button_click()
+
+    def on_link_text_click(self, event):
+        self.on_get_started_button_click()
+
+    def on_get_started_button_click(self):
+        # Switch to the main menu with three buttons
+        self.controller.show_frame('MainMenu_Page')
+
+    def on_scan_button_click(self):
+        # Switch to the main menu with three buttons
+        self.controller.frames["MatchingPage"].initialize_camera_on_enter()
+        self.controller.show_frame("MatchingPage")
+
+
+class MatchingPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent, bg='#5D1C1C')
         self.controller = controller
         self.photo = None
         self.camera_preview_initialized = False
 
-        self.controller.title('TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES-CAVITE')
-        self.controller.state('zoomed')
-        self.controller.iconphoto(False, tk.PhotoImage(file='tup logo 1.png'))
-
-        # Create a canvas that covers the entire frame
-        self.background_image = tk.PhotoImage(file='bg.png')
         self.canvas = tk.Canvas(self, width=self.winfo_screenwidth(), height=self.winfo_screenheight())
         self.canvas.pack()
-
-        # Place the background image on the canvas
-        self.canvas.create_image(0, 0, image=self.background_image, anchor=tk.NW)
-
-
-        # Create a label in front of the background image
-        # Create a transparent label using a Canvas
-        heading_text = 'WELCOME'
-        heading_label = self.canvas.create_text(self.winfo_screenwidth() // 2, self.winfo_screenheight() // 3,
-                                                text=heading_text, font=('caveat brush', 130),
-                                                fill='#820505')  # Set the text color
-
-        # Place the label in the center of the frame (adjust the values as needed)
-        # Since we use canvas.create_text, there's no need for anchor=tk.CENTER
-        # and we can directly set x and y coordinates.
-        # Adjust the y-coordinate to change the vertical position of the text.
-        # For example, self.winfo_screenheight() // 2 - 50 will move the text 50 pixels up.
-        self.canvas.coords(heading_label, self.winfo_screenwidth() // 3 + 140, self.winfo_screenheight() // 3 + 60)
-
-        sub_heading_label = 'TUPCIANS!'
-        sub_heading_label = self.canvas.create_text(self.winfo_screenwidth() // 2, self.winfo_screenheight() // 3,
-                                                    text=sub_heading_label, font=('inter', 40, 'bold'),
-                                                    fill='black')  # Set the text color
-        self.canvas.coords(sub_heading_label, self.winfo_screenwidth() // 2 + 210,
-                            self.winfo_screenheight() // 3 + 160)
 
         # Create a variable to keep track of whether a match has been found
         self.match_found = False
@@ -713,18 +804,8 @@ class ValidationPage(tk.Frame):
         # Create a variable to control whether scanning should continue
         self.continue_scanning = True
 
-        # Define the background color for the scan button
-        scan_button_bg_color = '#5D1C1C'
-
-        # Create Scan button with background color
-        self.scan_button = tk.Button(self, text='TAP TO SCAN YOUR COR', font=('inter', 25, 'bold'), fg='white', bg=scan_button_bg_color,
-                                     width=25, command=self.start_camera_and_text_detection)
-        self.scan_button.place(relx=0.5, rely=0.7, anchor=tk.CENTER)  # Adjust the values of relx and rely
-
-
-    def start_camera_and_text_detection(self):
         # Create a canvas to display the camera preview
-        self.camera_preview_label = tk.Label(self, width=900, height=650)
+        self.camera_preview_label = tk.Label(self, width=900, height=650, bg='#5D1C1C')
         self.camera_preview_label.place(relx=0.5, rely=0.45, anchor=tk.CENTER)
 
         # Create a label for the text extraction results
@@ -734,13 +815,12 @@ class ValidationPage(tk.Frame):
         # Create a StringVar to hold the extracted text
         self.extracted_text_var = tk.StringVar()
 
-        self.initialize_camera_preview()
 
-    def initialize_camera_preview(self):
+    def initialize_camera_on_enter(self):
         if not self.camera_preview_initialized:
             try:
                 # Open the camera (replace '0' with the correct camera index or device name)
-                self.cap = cv2.VideoCapture(1)  # Use '1' for a secondary camera
+                self.cap = cv2.VideoCapture(0)  # Use '1' for a secondary camera
                 if not self.cap.isOpened():
                     raise Exception("Camera not opened")
                 self.camera_preview_initialized = True
@@ -748,6 +828,11 @@ class ValidationPage(tk.Frame):
                 print("Camera initialization error:", str(e))
 
         self.update_camera_preview()
+
+    def start_validation(self):
+        self.initialize_camera_on_enter()
+        self.match_found = False
+        self.continue_scanning = True
 
     def update_camera_preview(self):
         if self.continue_scanning:  # Check if scanning should continue and a match has not been found
@@ -795,7 +880,8 @@ class ValidationPage(tk.Frame):
             # Resize the bounding box by multiplying the coordinates by a scaling factor
             scale_factor = 1.5  # Adjust this value to resize the bounding box as needed
             x1, y1, x2, y2 = int(b[1]), int(b[2]), int(b[3]), int(b[4])
-            x1, y1, x2, y2 = int(x1 * scale_factor), int(y1 * scale_factor), int(x2 * scale_factor), int(y2 * scale_factor)
+            x1, y1, x2, y2 = int(x1 * scale_factor), int(y1 * scale_factor), int(x2 * scale_factor), int(
+                y2 * scale_factor)
             image_rgb = cv2.rectangle(image_rgb, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
         return extracted_text, image_rgb
@@ -804,6 +890,7 @@ class ValidationPage(tk.Frame):
         # Release the camera
         if self.cap is not None:
             self.cap.release()
+        self.camera_preview_initialized = False  # Reset the camera initialization flag
 
     def on_leave(self):
         # Call the function to close the camera when leaving the page
@@ -861,11 +948,10 @@ class ValidationPage(tk.Frame):
                         # Show a confirmation message
                         messagebox.showinfo("Validation Successful", "Your ID is now Validated")
 
-
                         self.controller.show_frame("StartPage")
 
                         # Reset the camera initialization flag
-                        self.initialize_camera_preview()
+                        self.initialize_camera_on_enter()
 
                         # Clear previous text and image
                         self.text_result_label.config(text='')
@@ -874,7 +960,8 @@ class ValidationPage(tk.Frame):
                     else:
                         print("Not Matched")
                         # Show a message box with scan again or cancel options
-                        response = messagebox.askquestion("Validation Failed", "The ID is not in the database. Scan again?",
+                        response = messagebox.askquestion("Validation Failed",
+                                                          "The ID is not in the database. Scan again?",
                                                           icon='warning')
                         if response == 'yes':
                             # User chose to scan again, do nothing as the camera will continue scanning
@@ -899,7 +986,8 @@ class ValidationPage(tk.Frame):
             else:
                 print("No valid format found in the extracted text")
                 # Show a message box with scan again or cancel options
-                response = messagebox.askquestion("Validation Failed", "No valid ID format found. Scan again?", icon='warning')
+                response = messagebox.askquestion("Validation Failed", "No valid ID format found. Scan again?",
+                                                  icon='warning')
                 if response == 'yes':
                     # User chose to scan again, do nothing as the camera will continue scanning
                     pass
@@ -910,13 +998,7 @@ class ValidationPage(tk.Frame):
             print("No text detected")
 
     def go_to_matching_page(self):
-        # Reset the flags when the user returns to the ValidationPage
-        self.match_found = False
-        self.continue_scanning = True
-
-        # Initialize and start scanning when entering the validation page
-        self.controller.frames["ValidationPage"].initialize_camera_preview()
-        self.controller.show_frame('ValidationPage')
+        self.start_validation()
 
 
 if __name__ == "__main__":

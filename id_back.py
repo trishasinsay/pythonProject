@@ -18,14 +18,14 @@ import os
 
 
 # WIN SETTINGS
-title = 'Technological University of the Philippines - Cavite Campus Kiosk ID Maker'
+title = 'TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES - CAVITE CAMPUS KIOSK ID MAKER'
 size = '1366x768'
 icon = ''
 res = 0
 W = [title, size, res, icon]
 
 # FONTS
-F1 = ('cambria', 23)
+F1 = ('cambria', 20)
 F2 = ('cambria', 16, 'bold')
 F3 = ('cambria', 14, 'bold')
 F4 = ('cambria italic', 10)
@@ -38,8 +38,18 @@ class Win:
         self.root.title(W[0])
         self.root.geometry(W[1])
 
+        # Load the background image
+        bg_image = I.open('req_bg.png')
+        bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
+
+        self.bg_image = IT.PhotoImage(bg_image)
+
+        # Create a Label to display the background image
+        bg_label = tk.Label(self.root, image=self.bg_image)
+        bg_label.place(relwidth=1, relheight=1)
+
         # MAIN LABEL
-        self.main_lab = Label(self.root, text=title, font=F1, pady=10, bg='#5D1C1C', fg='#ffffff')
+        self.main_lab = Label(self.root, text=title, font=F1, pady=10, bg='black', fg='#ffffff')
         self.main_lab.pack(fill='x')  # Expand horizontally with the window
 
         # LOGO
@@ -48,38 +58,38 @@ class Win:
         self.Logo_F = Frame(self.main_lab, relief=SUNKEN)
         self.Logo_F.pack(side='left', padx=30, pady=2)  # Adjust placement as needed
 
-        self.img = I.open('logo.jpg')
+        self.img = I.open('tup.jpg')
         self.res_img = self.img.resize((self.width, self.height))
         self.Tk_Image = IT.PhotoImage(self.res_img)
 
-        self.Logo_L = Label(self.Logo_F, image=self.Tk_Image)
+        self.Logo_L = Label(self.Logo_F, image=self.Tk_Image, bg='black')
         self.Logo_L.pack(fill='both', expand=True)  # Expand both horizontally and vertically
 
         # FRAMES
-        self.F1 = Frame(self.root, relief=SUNKEN, bd=1, bg='#D8D8D8', width=500, height=500)  # Adjust width and height
+        self.F1 = Frame(self.root, relief=SUNKEN, bd=1, bg='#B29999', width=500, height=500)  # Adjust width and height
         self.F1.pack(side='left', padx=20, pady=20, fill='both', expand=True)  # Expand both horizontally and vertically
 
-        self.F2 = Frame(self.root, relief=SUNKEN, bd=1, bg='#D8D8D8', width=500, height=400)  # Adjust width and height
+        self.F2 = Frame(self.root, relief=SUNKEN, bd=1, bg='#B29999', width=500, height=400)  # Adjust width and height
         self.F2.pack(side='right', padx=20, pady=20, fill='both',
                      expand=True)  # Expand both horizontally and vertically
 
-        self.F1_title = Label(self.F1, bg='#5D1C1C', fg='#FFFFFF', text='Personal Details', font=F1)
+        self.F1_title = Label(self.F1, bg='black', fg='#FFFFFF', text='Personal Details', font=F1)
         self.F1_title.place(x=0, y=0, relwidth=1)
 
-        self.F2_title = Label(self.F2, bg='#5D1C1C', fg='#FFFFFF', text='ID Preview', font=F1)
+        self.F2_title = Label(self.F2, bg='black', fg='#FFFFFF', text='ID Preview', font=F1)
         self.F2_title.place(x=0, y=0, relwidth=1)
 
         # LABELS
-        self.L1 = Label(self.F1, text='STUDENT ID NUMBER', font=F3, bg='#D8D8D8').place(x=10, y=70)
-        self.L2 = Label(self.F1, text='INCASE OF EMERGENCY, CONTACT:', font=F3, bg='#D8D8D8').place(x=10, y=130)
-        self.L3 = Label(self.F1, text='FULL NAME', font=F3, bg='#D8D8D8').place(x=10, y=185)
-        self.L4 = Label(self.F1, text='CONTACT NO.', font=F3, bg='#D8D8D8').place(x=10, y=220)
-        self.L5 = Label(self.F1, text='HOUSE NO. & STREET', font=F3, bg='#D8D8D8').place(x=10, y=255)
-        self.L6 = Label(self.F1, text='BARANGAY', font=F3, bg='#D8D8D8').place(x=10, y=290)
-        self.L7 = Label(self.F1, text='CITY & PROVINCE', font=F3, bg='#D8D8D8').place(x=10, y=325)
+        self.L1 = Label(self.F1, text='STUDENT ID NUMBER', font=F3, bg='#B29999').place(x=10, y=70)
+        self.L2 = Label(self.F1, text='INCASE OF EMERGENCY, CONTACT:', font=F3, bg='#B29999').place(x=10, y=130)
+        self.L3 = Label(self.F1, text='FULL NAME', font=F3, bg='#B29999').place(x=10, y=185)
+        self.L4 = Label(self.F1, text='CONTACT NO.', font=F3, bg='#B29999').place(x=10, y=220)
+        self.L5 = Label(self.F1, text='HOUSE NO. & STREET', font=F3, bg='#B29999').place(x=10, y=255)
+        self.L6 = Label(self.F1, text='BARANGAY', font=F3, bg='#B29999').place(x=10, y=290)
+        self.L7 = Label(self.F1, text='CITY & PROVINCE', font=F3, bg='#B29999').place(x=10, y=325)
         self.L8 = Label(self.F1,
                         text='*Note: Please answer all fields honestly and check your information before\npressing "Next" button and Use CAPITAL LETTERS only',
-                        font=F4, bg='#D8D8D8').place(x=120, y=380)
+                        font=F4, bg='#B29999').place(x=120, y=380)
 
         self.ID = StringVar()
         self.C_name = StringVar()
