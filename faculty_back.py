@@ -25,7 +25,7 @@ res = 0
 W = [title, size, res, icon]
 
 # FONTS
-F1 = ('cambria', 23)
+F1 = ('cambria', 20)
 F2 = ('cambria', 16, 'bold')
 F3 = ('cambria', 14, 'bold')
 F4 = ('cambria italic', 10)

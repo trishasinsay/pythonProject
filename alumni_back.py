@@ -109,7 +109,7 @@ class Win:
         self.last_y = 0
 
         self.signature_canvas = Canvas(self.F1, relief=SUNKEN, bg='white')
-        self.signature_canvas.place(x=20, y=200, width=700, height=180)
+        self.signature_canvas.place(x=20, y=200, width=600, height=180)
 
         # Bind mouse events to the canvas
         self.signature_canvas.bind("<Button-1>", self.start_drawing)
