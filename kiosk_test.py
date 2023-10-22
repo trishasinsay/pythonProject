@@ -771,6 +771,12 @@ class ValidationPage(tk.Frame):
         button.photo = button_photo  # Keep a reference to the image
         button.place(x=screen_width // 2.2 + 650, y=screen_height // 2 + 220)  # Adjust the position as needed
 
+
+        # Add another text element below the subheader text
+        note_text = self.canvas.create_text(screen_width // 1.38 - 200, 600,
+                                            text="*Note: Please place your COR to the designated place before scanning start.",
+                                            fill="white", font=("roboto", 14))
+
     # Function to execute when the button is clicked
     def on_back_button_click(self):
         self.on_get_started_button_click()
