@@ -3,6 +3,8 @@ import tkinter as ttk
 from tkinter import messagebox
 from PIL import Image, ImageTk, ImageDraw
 import cv2
+import pyzbar.pyzbar as pyzbar
+import threading
 import mysql.connector
 from PIL import Image, ImageTk
 from tkinter import ttk
@@ -12,7 +14,6 @@ import subprocess
 import re
 import os
 import io
-
 
 
 class SampleApp(tk.Tk):
@@ -32,7 +33,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, MainMenu_Page, RequestPage, MakerPage, ValidationPage, MatchingPage):
+        for F in (StartPage, MainMenu_Page, RequestPage, MakerPage, ValidationPage, RegistrationPage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -88,7 +89,7 @@ class StartPage(tk.Frame):
 
 
         # Load the image
-        image_path = 'arrow.png'  # Replace with the path to your image
+        image_path = 'logo.jpg'  # Replace with the path to your image
         if os.path.exists(image_path):
             image = Image.open(image_path)
 
@@ -96,14 +97,14 @@ class StartPage(tk.Frame):
             image_width, image_height = image.size
             screen_width = self.winfo_screenwidth()
             screen_height = self.winfo_screenheight()
-            image_x = screen_width - 120
-            image_y = 515
+            image_x = screen_width - 170
+            image_y = 2
 
             # Create a PhotoImage object from the cropped image
             image = ImageTk.PhotoImage(image)
 
             # Create a label to display the image with a transparent background
-            image_label = tk.Label(self, image=image, bg="#151716")
+            image_label = tk.Label(self, image=image, bg="#666666")
             image_label.place(x=image_x, y=image_y)
 
             # Keep a reference to the image to prevent it from being garbage collected
@@ -111,57 +112,33 @@ class StartPage(tk.Frame):
         else:
             print(f"Image file not found: {image_path}")
 
-        # Load the image
-        image_path = 'banner.png'  # Replace with the path to your image
-        if os.path.exists(image_path):
-            image = Image.open(image_path)
-
-            # Calculate the position of the image in the upper right corner
-            image_width, image_height = image.size
-            screen_width = self.winfo_screenwidth()
-            screen_height = self.winfo_screenheight()
-            image_x = screen_width // 2 - 650
-            image_y =55
-
-            # Create a PhotoImage object from the cropped image
-            image = ImageTk.PhotoImage(image)
-
-            # Create a label to display the image with a transparent background
-            image_label = tk.Label(self, image=image, bg="#D0CFD2")
-            image_label.place(x=image_x, y=image_y)
-
-            # Keep a reference to the image to prevent it from being garbage collected
-            image_label.image = image
-        else:
-            print(f"Image file not found: {image_path}")
-
-        # Add header text inside the rectangle
-        header_text1 = self.canvas.create_text(screen_width // 2 - 22 + 30, 30,
-                                                text="TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES-CAVITE",
-                                                fill="black",
-                                                font=("Cambria", 19))
-
-        header_text = self.canvas.create_text(699, 250, text="WELCOME", fill="#862C3C",
-                                         font=("Times New Roman", 111, 'bold'))
-        header =self.canvas.create_text(699, 249, text="WELCOME", fill="white", font=("Times New Roman", 110, 'bold'))
+        # Add header text below the header rectangle
+        header_text_below = self.canvas.create_text(screen_width // 2, 220, text="WELCOME", fill="white",
+                                                    font=("Cambria", 110, 'bold'))
 
         # Add subheader text below the header text
-        subheader_text = self.canvas.create_text(screen_width // 2, 370, text="T U P C I A N S !", fill="white",
-                                                     font=('Anonymous Pro', 50, 'bold', "italic"))
-        sub_header = self.canvas.create_text(screen_width // 2 - 1, 369, text="T U P C I A N S !", fill="#862C3C", font=('Anonymous Pro', 50, 'bold', "italic"))
+        subheader_text = self.canvas.create_text(screen_width // 1.55, 335, text="TUPCIANS!", fill="#CF0F13",
+                                                     font=('bangers', 70, 'bold'))
 
         # Add another text element below the subheader text
-        note_text = self.canvas.create_text(screen_width // 1.7 - 400, 620,
-                                            text=" Welcome to our ID Maker Kiosk, students, faculty, and alumni! We are thrilled to\n offer this convenient service to help you obtain your IDs. Whether you need a new\n or a replacement ID, we are here to assist you.",
+        note_text = self.canvas.create_text(screen_width // 1.45, 450,
+                                            text=" Welcome, students, faculties, and alumni, to our ID Maker Kiosk! We are thrilled to\n offer this convenient service to help you obtain your IDs. Whether you're new or need\n a replacement ID, we're here to assist you.",
                                             fill="white",
-                                            font=("Times New Roman", 16, "italic"))
+                                            font=("roboto", 15))
 
         # Add clickable text button
-        clickable_text = self.canvas.create_text(screen_width // 1.3 + 30, 530, text="Get Started", fill="white",
-                                                 font=("Times New Roman", 50, 'italic'))
+        clickable_text = self.canvas.create_text(screen_width // 1.3, 580, text="GET STARTED>>", fill="white",
+                                                 font=("Cambria", 45, 'bold'))
         self.canvas.tag_bind(clickable_text, "<Button-1>", self.on_clickable_text_click)
 
+        # Add clickable text button
+        link = self.canvas.create_text(screen_width // 6 - 100, 50, text="Tupcuitc.com", fill="white",
+                                       font=("Bitter", 20, 'bold', 'italic'))
 
+        self.canvas.tag_bind(link, "<Button-1>", self.on_link_text_click)
+
+    def on_link_text_click(self, event):
+        self.on_get_started_button_click()
 
     def on_clickable_text_click(self, event):
         self.on_get_started_button_click()
@@ -179,7 +156,7 @@ class MainMenu_Page(tk.Frame):
         self.button_click_in_progress = False  # Initialize the flag
 
         # Load the background image using PIL
-        self.bg_image = Image.open('menu.png')  # Replace with your background image path
+        self.bg_image = Image.open('mainmenu.png')  # Replace with your background image path
         self.bg_photo = ImageTk.PhotoImage(self.bg_image)
 
         # Create a Label to display the background image
@@ -189,40 +166,17 @@ class MainMenu_Page(tk.Frame):
         # Bind the window resize event to update the background image
         self.bind("<Configure>", self.on_resize)
 
-        # Load image for the button
-        image1 = Image.open('validation.png')
-        image2 = Image.open('requesting.png')
-        image3 = Image.open('maker.png')
-
-        # Create PhotoImage objects and assign them to instance variables
-        self.image1 = ImageTk.PhotoImage(image1)
-        self.image2 = ImageTk.PhotoImage(image2)
-        self.image3 = ImageTk.PhotoImage(image3)
-
         # Create three rounded buttons
-        #button1 = RoundedButton(self, text="ID REQUEST FORM", command=self.on_button1_click)
-        #button2 = RoundedButton(self, text="ID MAKER", command=self.on_button2_click)
-        #button3 = RoundedButton(self, text="ID VALIDATION", command=self.on_button3_click)
-        req_button = tk.Button(self, image=self.image2, compound=tk.TOP, bg='black', height=178, width=200,
-                            command=self.on_button1_click, bd=0)
-        req_button.grid(row=1, column=1, pady=308, padx=164, sticky='nw')
-
-        maker_button = tk.Button(self, image=self.image3, compound=tk.TOP, bg='black', height=178, width=200,
-                               command=self.on_button2_click, bd=0)
-        maker_button.grid(row=1, column=2, pady=308, padx=54, sticky='w')
-
-        validation_button = tk.Button(self, image=self.image1, compound=tk.TOP, bg='white', height=178, width=200,
-                                 command=self.on_button3_click, bd=0)
-        validation_button.grid(row=1, column=3, pady=308, padx=-2, sticky='nsew')
-
-        back_button = tk.Button(self, text='BACK', font=('Cambria', 22, "bold"), command=self.on_back_button_click)
+        button1 = RoundedButton(self, text="ID REQUEST FORM", command=self.on_button1_click)
+        button2 = RoundedButton(self, text="ID MAKER",  command=self.on_button2_click)
+        button3 = RoundedButton(self, text="ID VALIDATION", command=self.on_button3_click)
+        back_button = tk.Button(self, text='BACK', font=('Cambria', 22, "bold"), height=2, command=self.on_back_button_click)
 
         # Use grid to place widgets
-        #req_button.grid(row=0, column=2, sticky="nw", padx=340, pady=177)
-        #button2.grid(row=1, column=2, sticky="nsew", padx=250, pady=0)
-        #button3.grid(row=2, column=2, sticky="nsew", padx=250, pady=60)
-        back_button.grid(row=3, column=2, sticky="nsew", padx=250, pady=10)
-
+        button1.grid(row=0, column=2, sticky="nsew", padx=250, pady=60)
+        button2.grid(row=1, column=2, sticky="nsew", padx=250, pady=0)
+        button3.grid(row=2, column=2, sticky="nsew", padx=250, pady=60)
+        back_button.grid(row=3, column=2, sticky="nsew", padx=250, pady=0)
 
     def on_button1_click(self):
         if self.button_click_in_progress:
@@ -279,7 +233,7 @@ class RoundedButton(tk.Button):
         self.config(highlightthickness=2)
         self.config(padx=10)
         self.config(pady=5)
-        self.config(bg="black")
+        self.config(bg="#2C302E")
         self.config(activebackground="white")
         self.config(foreground="white")
         self.config(font=("cambria", 22, "bold"))
@@ -727,11 +681,11 @@ class MakerPage(tk.Frame):
             # The input does not match the format, show a messagebox
             messagebox.showerror("Invalid Format", "Please enter the right OTP code format you recieved in your email.")
 
-
 class ValidationPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
+        # Create the camera preview label
 
         self.canvas = tk.Canvas(self)
         self.canvas.pack(expand=True, fill="both")
@@ -799,15 +753,9 @@ class ValidationPage(tk.Frame):
                                                  font=('bangers', 70, 'bold'))
 
         # Create a button instead of clickable text
-        scan_button = tk.Button(self, text="TAP TO SCAN YOUR COR", font=("cambria", 28, 'bold'),
-                                bg='#661112', fg='white', width=27, height=1, command=self.on_scan_button_click)
+        scan_button = tk.Button(self, text="TAP TO SCAN YOUR ID", font=("cambria", 28, 'bold'),
+                                bg='#661112', fg='white', width=27, height=1, command=self.start_qr_scan_thread)
         scan_button.place(x=screen_width // 2.35 - 100, y=screen_height // 2 + 120)
-
-        # Add clickable text button
-        link = self.canvas.create_text(screen_width // 6 - 100, 50, text="Tupcuitc.com", fill="white",
-                                       font=("Bitter", 20, 'bold', 'italic'))
-
-        self.canvas.tag_bind(link, "<Button-1>", self.on_link_text_click)
 
         # Load the button image
         button_image = Image.open("back.png")
@@ -819,240 +767,245 @@ class ValidationPage(tk.Frame):
         button.photo = button_photo  # Keep a reference to the image
         button.place(x=screen_width // 2.2 + 650, y=screen_height // 2 + 220)  # Adjust the position as needed
 
-
-        # Add another text element below the subheader text
-        note_text = self.canvas.create_text(screen_width // 1.38 - 200, 600,
-                                            text="*Note: Please place your COR to the designated place before scanning start.",
-                                            fill="white", font=("roboto", 14))
+        self.camera_preview_label = tk.Label(self)
+        self.camera_preview_label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.camera_preview_label.image = None  # Initialize image attribute
 
     # Function to execute when the button is clicked
     def on_back_button_click(self):
-        self.on_get_started_button_click()
-
-    def on_link_text_click(self, event):
         self.on_get_started_button_click()
 
     def on_get_started_button_click(self):
         # Switch to the main menu with three buttons
         self.controller.show_frame('MainMenu_Page')
 
-    def on_scan_button_click(self):
-        # Switch to the main menu with three buttons
-        self.controller.frames["MatchingPage"].initialize_camera_on_enter()
-        self.controller.show_frame("MatchingPage")
+    def start_qr_scan_thread(self):
+        # Create a new thread to run the QR code scanning process and camera preview
+        qr_scan_thread = threading.Thread(target=self.start_qr_scan)
+        qr_scan_thread.start()
 
+    def start_qr_scan(self):
+        # Start the camera and create the camera preview thread
+        self.cap = cv2.VideoCapture(0)
+        self.thread_running = True
+        self.camera_preview_thread = threading.Thread(target=self.update_camera_preview)
+        self.camera_preview_thread.start()
 
-class MatchingPage(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent, bg='#5D1C1C')
-        self.controller = controller
-        self.photo = None
-        self.camera_preview_initialized = False
+    def scan_qr_code(self):
+        # Capture the scanned image data
+        self.scanned_image_data = self.camera_preview_label.get_image_data()
 
-        self.canvas = tk.Canvas(self, width=self.winfo_screenwidth(), height=self.winfo_screenheight())
-        self.canvas.pack()
+        # Navigate to the MatchingPage
+        self.controller.show_frame("StartPage")
 
-        # Create a variable to keep track of whether a match has been found
-        self.match_found = False
-
-        # Create a variable to control whether scanning should continue
-        self.continue_scanning = True
-
-        # Create a canvas to display the camera preview
-        self.camera_preview_label = tk.Label(self, width=900, height=650, bg='#5D1C1C')
-        self.camera_preview_label.place(relx=0.5, rely=0.45, anchor=tk.CENTER)
-
-        # Create a label for the text extraction results
-        self.text_result_label = tk.Label(self, text='', font=('inter', 14), fg='white', bg='#5D1C1C')
-        self.text_result_label.place(relx=0.5, rely=0.9, anchor=tk.CENTER)
-
-        # Create a StringVar to hold the extracted text
-        self.extracted_text_var = tk.StringVar()
-
-
-    def initialize_camera_on_enter(self):
-        if not self.camera_preview_initialized:
-            try:
-                # Open the camera (replace '0' with the correct camera index or device name)
-                self.cap = cv2.VideoCapture(0)  # Use '1' for a secondary camera
-                if not self.cap.isOpened():
-                    raise Exception("Camera not opened")
-                self.camera_preview_initialized = True
-            except Exception as e:
-                print("Camera initialization error:", str(e))
-
-        self.update_camera_preview()
-
-    def start_validation(self):
-        self.initialize_camera_on_enter()
-        self.match_found = False
-        self.continue_scanning = True
+        # Create a label for the camera preview dynamically
+        # Start the camera preview in the label
+        self.camera_preview = tk.Label(self)
+        self.camera_preview.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.camera_preview_label.image = None  # Initialize image attribute
 
     def update_camera_preview(self):
-        if self.continue_scanning:  # Check if scanning should continue and a match has not been found
-            # Read a frame from the camera
+        while self.thread_running:
             ret, frame = self.cap.read()
+            if not ret:
+                break
 
-            if ret:
-                # Enhance the color (contrast stretching)
-                frame = self.enhance_color(frame)
+            # Convert the frame to ImageTk format to display in the label
+            image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            photo = ImageTk.PhotoImage(image=image)
 
-                # Convert the frame to RGB format
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                photo = ImageTk.PhotoImage(image=image)
+            # Update the camera preview label with the new frame
+            self.camera_preview_label.config(image=photo)
+            self.camera_preview_label.image = photo
 
-                # Extract text and draw a bounding box
-                extracted_text, bbox_image = self.extract_text_from_image(frame_rgb)
-                self.text_result_label.config(text=extracted_text)
-
-                # Convert the frame with the bounding box to PhotoImage
-                self.photo = ImageTk.PhotoImage(image=Image.fromarray(bbox_image))
-
-                # Update the canvas with the new frame
-                self.camera_preview_label.config(image=photo)
-                self.camera_preview_label.image = photo
-
-                # Check for a match in the database
-                if not self.match_found:  # Check if a match has not been found
-                    self.check_database_match(extracted_text)
-
-            # Schedule the update method to be called again after 10ms
-            self.after(10, self.update_camera_preview)
-
-    def extract_text_from_image(self, image):
-        # Convert the OpenCV BGR image to RGB format
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Use Tesseract to perform OCR and extract text from the image
-        extracted_text = pytesseract.image_to_string(Image.fromarray(image_rgb))
-
-        # Draw a bounding box around the detected text (resize the bounding box)
-        d = pytesseract.image_to_boxes(Image.fromarray(image_rgb))
-        for b in d.splitlines():
-            b = b.split()
-            # Resize the bounding box by multiplying the coordinates by a scaling factor
-            scale_factor = 1.5  # Adjust this value to resize the bounding box as needed
-            x1, y1, x2, y2 = int(b[1]), int(b[2]), int(b[3]), int(b[4])
-            x1, y1, x2, y2 = int(x1 * scale_factor), int(y1 * scale_factor), int(x2 * scale_factor), int(
-                y2 * scale_factor)
-            image_rgb = cv2.rectangle(image_rgb, (x1, y1), (x2, y2), (0, 0, 255), 2)
-
-        return extracted_text, image_rgb
-
-    def stop_camera(self):
-        # Release the camera
-        if self.cap is not None:
-            self.cap.release()
-        self.camera_preview_initialized = False  # Reset the camera initialization flag
-
-    def on_leave(self):
-        # Call the function to close the camera when leaving the page
-        self.stop_camera()
-
-    def enhance_color(self, frame):
-        # Apply contrast stretching or color enhancement here
-        # Example: Increase the contrast
-        min_value = np.min(frame)
-        max_value = np.max(frame)
-        frame = ((frame - min_value) / (max_value - min_value) * 255).astype(np.uint8)
-        return frame
-
-    def check_database_match(self, extracted_text):
-        if extracted_text:
-            # Replace with your database credentials
-            db = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="Root030702",
-                port=330,  # Use an integer for the port
-                database="kiosk_db"
-            )
-
-            cursor = db.cursor()
-
-            # The SQL query should be written with backticks for field names with spaces and specify the table name.
-            cursor.execute("SELECT `StudentNo.` FROM enrollment_list")
-
-            results = cursor.fetchall()
-
-            db.close()
-
-            # Extract the ID numbers from the results and normalize them (e.g., remove spaces and convert to uppercase)
-            id_numbers = {result[0].strip().upper() for result in results}
-
-            # Normalize the extracted text for comparison
-            extracted_text_normalized = extracted_text.strip().upper()
-
-            # Use regular expressions to find and extract the format "TUPC-##-####" from the text
-            match = re.search(r'TUPC-\d{2}-\d{4}', extracted_text_normalized)
-            if match:
-                extracted_format = match.group(0)  # Extract the matched format
-                print("Extracted Format:", extracted_format)  # Cleaned and normalized extracted format
-
-                # Define a regular expression pattern for the expected format "TUPC-##-####"
-                expected_format_pattern = r'^TUPC-\d{2}-\d{4}$'
-
-                # Check if the extracted format matches the expected format
-                if re.match(expected_format_pattern, extracted_format):
-                    if extracted_format in id_numbers:
-                        print("Matched")
-                        self.match_found = True  # Set the match_found flag to True
-                        self.continue_scanning = False  # Stop scanning
-                        # Show a confirmation message
-                        messagebox.showinfo("Validation Successful", "Your ID is now Validated")
-
-                        self.controller.show_frame("StartPage")
-
-                        # Reset the camera initialization flag
-                        self.initialize_camera_on_enter()
-
-                        # Clear previous text and image
-                        self.text_result_label.config(text='')
-                        self.camera_preview_label.config(image='')
+            decoded_objects = pyzbar.decode(frame)
+            if decoded_objects:
+                id_number = decoded_objects[0].data.decode('utf-8')
+                match = re.search(r'TUPC-\d{2}-\d{4}', id_number)
+                if match:
+                    matched_text = match.group(0)
+                    if self.match_qr_code_with_database(matched_text):
+                        # Insert data into the database only when a match is found
+                        if self.insert_data_into_database(matched_text):
+                            messagebox.showinfo('Success!', f'Student with ID number {matched_text} is now validated!')
 
                     else:
-                        print("Not Matched")
-                        # Show a message box with scan again or cancel options
-                        response = messagebox.askquestion("Validation Failed",
-                                                          "The ID is not in the database. Scan again?",
-                                                          icon='warning')
-                        if response == 'yes':
-                            # User chose to scan again, do nothing as the camera will continue scanning
-                            pass
-                        else:
-                            # User chose to cancel, go back to the StartPage
-                            self.controller.show_frame("StartPage")
-                else:
-                    print("Extracted format does not match the expected format (TUPC-##-####)")
+                        messagebox.showinfo('Error', f'Sorry, ID number {matched_text} is not found in the database')
 
-                    # Show a message box with scan again or cancel options
-                    response = messagebox.askquestion("Validation Failed", "Invalid ID format. Scan again?",
-                                                      icon='warning')
-                    if response == 'yes':
-                        # User chose to scan again, do nothing as the camera will continue scanning
-                        pass
-                    else:
-                        # User chose to cancel, go back to the StartPage
-                        self.controller.show_frame("StartPage")
+                # Stop the camera and thread after scanning
+                self.stop_qr_scan()
+                # Close the camera frame after a delay of 2 seconds
+                self.after(200, self.close_camera_preview)
+
+        self.cap.release()
 
 
-            else:
-                print("No valid format found in the extracted text")
-                # Show a message box with scan again or cancel options
-                response = messagebox.askquestion("Validation Failed", "No valid ID format found. Scan again?",
-                                                  icon='warning')
-                if response == 'yes':
-                    # User chose to scan again, do nothing as the camera will continue scanning
-                    pass
-                else:
-                    # User chose to cancel, go back to the StartPage
-                    self.controller.show_frame("StartPage")
+
+    def match_qr_code_with_database(self, id_number):
+        conn = self.connect_to_database()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                sql_query = "SELECT * FROM kiosk_db.enrollment_list WHERE `StudentNo.` = %s"
+                cursor.execute(sql_query, (id_number,))
+                result = cursor.fetchone()
+                if result:
+                    # Match found in the database
+                    return True
+            except mysql.connector.Error as e:
+                print(f"Error querying database: {e}")
+            finally:
+                cursor.close()
+                conn.close()
+        return False
+
+    def insert_data_into_database(self, id_number):
+        # Check if the ID number exists in the database before inserting
+        if self.match_qr_code_with_database(id_number):
+            conn = self.connect_to_database()
+            if conn:
+                try:
+                    cursor = conn.cursor()
+                    sql_query = "INSERT INTO kiosk_db.validation_record (`StudentID`, DOT, Time) VALUES (%s, NOW(), NOW())"
+                    cursor.execute(sql_query, (id_number,))
+                    conn.commit()  # Commit the transaction
+                    messagebox.showinfo('Success!', f'Student with ID number {id_number} is now validated!')
+                    self.controller.show_frame('StartPage')
+
+                finally:
+                    cursor.close()
+                    conn.close()
         else:
-            print("No text detected")
+            messagebox.showinfo('Error', f'Sorry, ID number {id_number} is not found in the database')
+    def connect_to_database(self):
+        try:
+            conn = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='Root030702',
+                port=330,
+                database='kiosk_db'
+            )
+            return conn
+        except mysql.connector.Error as e:
+            print(f"Error connecting to MySQL: {e}")
+            return None
 
-    def go_to_matching_page(self):
-        self.start_validation()
+    def stop_qr_scan(self):
+        self.thread_running = False
+
+    def close_camera_preview(self):
+        # Clear the camera preview label
+        if self.camera_preview_label:
+            self.camera_preview_label.destroy()
+            self.camera_preview_label = None
+
+
+class RegistrationPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent, bg='#EFEFEF')  # Set the background color for the entire page
+        self.controller = controller
+
+        # Create a colored square background frame to hold the labels and input fields
+        form_frame = tk.Frame(self, bg='#5D1C1C', pady=20, width=180, height=200)
+        form_frame.pack(expand=True, fill=tk.BOTH)  # Allow the form_frame to fill available space
+
+        # Center the form_frame within the window
+        form_frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+
+        # Create a label for the RegistrationPage
+        registration_label = tk.Label(form_frame, text="Student's Information", font=('caveat brush', 30), bg='#5D1C1C',
+                                      fg='#FFFFFF')
+        registration_label.grid(row=0, column=0, pady=20, padx=350, sticky='nwe')
+
+
+        id_label = tk.Label(form_frame, text='ID Number:', font=('inter', 18, 'bold'), bg='#5D1C1C', fg='#FFFFFF')
+        id_label.grid(row=4, column=0, padx=260, sticky='w')
+
+        self.id_entry = tk.Entry(form_frame, font=('inter', 16))
+        self.id_entry.grid(row=4, column=0, padx=400, pady=25, sticky='w')
+
+        qr_code_label = tk.Label(form_frame, text='QR Code Number:', font=('inter', 18, 'bold'), bg='#5D1C1C', fg='#FFFFFF')
+        qr_code_label.grid(row=5, column=0, padx=180, pady=15, sticky='w')
+
+        self.qr_code_entry = tk.Entry(form_frame, font=('inter', 16))
+        self.qr_code_entry.grid(row=5, column=0, padx=400, pady=15, sticky='w')
+
+
+        # Create the Proceed button, but set it to be disabled initially
+        proceed_button = tk.Button(form_frame, text='Proceed', font=('caveat brush', 20), command=self.proceed_form,
+                                   width=10, bg='#5D1C1C', fg='#FFFFFF')
+        proceed_button.grid(row=10, column=0, columnspan=1, pady=20, padx=400, sticky='se')
+
+        # Create the cancel button
+        cancel_button = tk.Button(form_frame, text='Cancel', font=('caveat brush', 20), command=self.cancel_form, bg='#5D1C1C',
+                                  width=10, fg='#FFFFFF')
+        cancel_button.grid(row=10, column=0, columnspan=1, pady=20, padx=360, sticky='sw')
+
+    def populate_data(self, id_number, qr_code_number):
+        # Populate the data from the QR code into the registration form
+        self.id_entry.insert(0, id_number)
+        self.qr_code_entry.insert(0, qr_code_number)
+
+        # Disable editing for populated fields
+        self.id_entry.config(state="readonly")
+        self.qr_code_entry.config(state="readonly")
+
+    def proceed_form(self):
+        # Retrieve the form data from the input fields
+        id_number = self.id_entry.get()
+        qr_code_number = self.qr_code_entry.get()
+
+        # You can now use this data as needed, for example, display a message with the data
+        message = f'ID Number: {id_number}\nQR Code Number: {qr_code_number}'
+        user_confirmation = tk.messagebox.askokcancel('Student Information', message)
+
+        if user_confirmation:
+            # Save the data to the database (example using SQLite)
+            self.save_data_to_database(id_number, qr_code_number)
+
+            messagebox.showinfo("Success", "Data has been submitted.")
+            self.controller.show_frame("MainMenu_Page")
+
+            # Clear the input fields
+            self.id_entry.delete(0, tk.END)
+            self.qr_code_entry.delete(0, tk.END)
+
+        else:
+            return None
+
+        # Direct to the matching page after saving data
+        self.controller.show_frame("MatchingPage")
+
+    def save_data_to_database(self, StudentID, QR):
+        # Replace the following with your MySQL database credentials
+        # Replace 'database_name', 'table_name', and 'your_mysql_username' with your database and table information
+
+        db_temp = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="Root030702",
+            port = 330,
+            database="kiosk_db"
+        )
+        # Establish a connection to the MySQL database
+        cursor = db_temp.cursor()
+
+        # Define the SQL query to insert data into the database table
+        insert_query = "INSERT INTO validate (StudentID, QR) VALUES (%s, %s)"
+
+        # Execute the query with the provided values
+        data = (StudentID, QR)
+        cursor.execute(insert_query, data)
+
+        # Commit the changes to the database and close the connection
+        db_temp.commit()
+        db_temp.close()
+
+    def cancel_form(self):
+        # Switch back to the main menu page
+        self.controller.show_frame("MainMenu_Page")
+
 
 
 if __name__ == "__main__":
