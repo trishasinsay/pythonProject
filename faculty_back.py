@@ -1,6 +1,8 @@
+import subprocess
 from tkinter import *
 from tkinter import ttk
 import tkinter as tk
+from tkinter import Tk, Entry, StringVar
 from PIL import Image as I
 from PIL import ImageTk as IT
 from PIL import ImageDraw as ID
@@ -78,7 +80,7 @@ class Win:
         self.F2_title.place(x=0, y=0, relwidth=1)
 
         # LABELS
-        self.L1 = Label(self.F1, text='DATE', font=F3, bg='#B29999').place(x=10, y=60)
+        self.L1 = Label(self.F1, text='DATE OF ID CREATION', font=F3, bg='#B29999').place(x=10, y=60)
         self.L2 = Label(self.F1, text='ID NO.', font=F3, bg='#B29999').place(x=335, y=60)
         self.L3 = Label(self.F1, text='GSIS NO.', font=F3, bg='#B29999').place(x=10, y=115)
         self.L4 = Label(self.F1, text='POLICY NO.', font=F3, bg='#B29999').place(x=310, y=115)
@@ -95,13 +97,8 @@ class Win:
         self.L14.place(x=120, y=430)
         self.L15 = Label(self.F1,text='*Note: When you are capturing image, press the ENTER KEY to capture your image',font=F4, bg='#B29999')
         self.L15.place(x=90, y=460)
-        self.L16 = Label(self.F1, text='Date Format: mm-dd-yyyy',
-                         font=F4, bg='#B29999')
-        self.L16.place(x=120, y=85)
-        self.L16 = Label(self.F1, text='Format: TUPC-ID NO. ####',
-                         font=F4, bg='#B29999')
-        self.L16.place(x=440, y=85)
 
+        initial_text = "TUPC-ID NO. #### "
 
         self.ID = StringVar()
         self.DATE = StringVar()
@@ -116,8 +113,19 @@ class Win:
         self.CITY = StringVar()
         self.CONTACT = StringVar()
 
-        self.E1 = Entry(self.F1, font=F3, textvariable=self.DATE).place(x=100, y=60, width=200)
-        self.E2 = Entry(self.F1, font=F3, textvariable=self.ID).place(x=420, y=60, width=200)
+        self.E1 = Entry(self.F1, font=F3, textvariable=self.DATE)
+        self.E1.place(x=210, y=60, width=120)
+        self.E1.insert(0, "mm-dd-yyyy")  # Placeholder text
+        self.E1.config(fg="gray")  # Set text color to gray
+        self.E1.bind("<FocusIn>", self.on_entry_click_date)
+        self.E1.bind("<FocusOut>", self.on_focus_out_date)
+        # Entry for ID
+        self.E2 = Entry(self.F1, font=F3, textvariable=self.ID)
+        self.E2.place(x=420, y=60, width=200)
+        self.E2.insert(0, initial_text)
+        self.E2.config(fg="gray")
+        self.E2.bind("<FocusIn>", self.on_entry_click)
+        self.E2.bind("<FocusOut>", self.on_focus_out)
         self.E3 = Entry(self.F1, font=F3, textvariable=self.GSIS).place(x=100, y=115, width=200)
         self.E4 = Entry(self.F1, font=F3, textvariable=self.POLICY).place(x=420, y=115, width=200)
         self.E5 = Entry(self.F1, font=F3, textvariable=self.TIN).place(x=100, y=155, width=200)
@@ -127,7 +135,10 @@ class Win:
         self.E9 = Entry(self.F1, font=F3, textvariable=self.STREET).place(x=208, y=300, width=400)
         self.E10 = Entry(self.F1, font=F3, textvariable=self.BRGY).place(x=208, y=330, width=400)
         self.E11 = Entry(self.F1, font=F3, textvariable=self.CITY).place(x=208, y=360, width=400)
-        self.E12 = Entry(self.F1, font=F3, textvariable=self.CONTACT).place(x=208, y=390, width=400)
+        self.E12 = Entry(self.F1, font=F3, textvariable=self.CONTACT)
+        self.E12.place(x=208, y=390, width=400)
+        self.E12['validate'] = 'key'
+        self.E12['validatecommand'] = (self.E12.register(self.on_validate_contact), '%P')
 
         # BUTTON
         self.B1 = Button(self.F1, text='Generate', font=F2, command=self.generate)
@@ -154,6 +165,32 @@ class Win:
         self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1)
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
 
+
+    def on_entry_click(self, event):
+        current_text = self.E2.get()
+        if current_text == "TUPC-ID NO. #### ":
+            self.E2.delete(11, "end")  # Delete the current text
+            self.E2.icursor(11)  # Set the cursor position after "TUPC-ID NO. "
+            self.E2.config(fg="black")
+
+    def on_focus_out(self, event):
+        if self.E2.get() == "":
+            self.E2.insert(0, "TUPC-ID NO. ")
+            self.E2.config(fg="gray")
+
+    def on_entry_click_date(self, event):
+        if self.E1.get() == "mm-dd-yyyy":
+            self.E1.delete(0, "end")
+            self.E1.config(fg="black")
+
+    def on_focus_out_date(self, event):
+        if self.E1.get() == "":
+            self.E1.insert(0, "mm-dd-yyyy")
+            self.E1.config(fg="gray")
+
+    def on_validate_contact(self, P):
+        # P is the proposed text
+        return P.isdigit() and len(P) <= 11
 
     def generate(self):
         contact_no = self.CONTACT.get()
@@ -188,36 +225,51 @@ class Win:
             self.Draw.text((96, 44), self.TIN.get(), fill='black', font=font1)
             self.Draw.text((96, 61), self.PAGIBIG.get(), fill='black', font=font1)
             self.Draw.text((96, 78), self.PHILHEALTH.get(), fill='black', font=font1)
-            self.Draw.text((35, 127), self.FNAME.get(), fill='black', font=font)
-            self.Draw.text((35, 147 ), self.STREET.get(), fill='black', font=font1)
-            self.Draw.text((65, 165), self.BRGY.get(), fill='black', font=font1)
-            self.Draw.text((55, 180 ), self.CITY.get(), fill='black', font=font1)
+            self.Draw.text((106, 135), self.FNAME.get(), fill='black', font=font, anchor='mm')
+            self.Draw.text((107, 155), self.STREET.get(), fill='black', font=font1, anchor='mm')
+            self.Draw.text((105, 170), self.BRGY.get(), fill='black', font=font1, anchor='mm')
+            self.Draw.text((107, 185), self.CITY.get(), fill='black', font=font1, anchor='mm')
             self.Draw.text((70, 198 ), self.CONTACT.get(), fill='black', font=font)
-            self.Draw.text((156, 290 ), self.DATE.get(), fill='black', font=font2)
+
+
+            # Rotate the department text before pasting it onto the ID card
+            date_text = self.DATE.get()
+            date_font = IF.truetype(font='Arial Bold.ttf', size=8)
+            date_font_image = I.new('RGBA', (48, 16), 'white')  # Create a transparent image
+            date_draw = ID.Draw(date_font_image)
+            date_draw.text((2, 0), date_text, fill='black', font=date_font)
+
+            # Rotate the text by the desired angle (e.g., 45 degrees)
+            rotated_date_font_image = date_font_image.rotate(90, expand=True)
+
+            # Paste the rotated department text onto the ID card image
+            self.image_c.paste(rotated_date_font_image,
+                               (191, 277))  # Adjust x and y positions as needed
 
             # Generate a PDF417 barcode
-            barcode_value = self.ID.get()
+            barcode_value = self.FNAME.get()
 
-            # Encode the barcode data
+            # Encode the barcode data with fewer columns (e.g., 4 columns)
             barcode_data = encode(barcode_value, columns=4)
 
             # Generate the barcode image
             barcode_image = self.generate_barcode_image(barcode_data)
 
             # Save the barcode image to a file
-            barcode_image.save('Barcode/' + barcode_value + '.png')
+            barcode_image.save('Barcode_Faculty/' + barcode_value + '.png')
 
             # Crop the barcode image (adjust cropping values as needed)
             # Note: PDF417 barcodes are usually more rectangular, so cropping may vary
-            cropped_barcode_img = barcode_image.crop((0, 0, barcode_image.width, barcode_image.height - 73))
+            cropped_barcode_img = barcode_image.crop((0, 0, barcode_image.width - 80, barcode_image.height + 150))
 
             # Resize the cropped barcode image
             cropped_barcode_img = cropped_barcode_img.resize((84, 43))
 
             # Paste the cropped barcode image onto the ID card
-            self.image_c.paste(cropped_barcode_img, (105, 276))
+            self.image_c.paste(cropped_barcode_img, (110, 260))  # Adjust the coordinates for proper placement
 
-            self.image_c.save('FACULTY BARCODE\ID_' + str(self.ID.get()) + '.png')
+            # Save the final ID card image
+            self.image_c.save('FACULTY BARCODE/ID_' + str(self.ID.get()) + '.png')
             self.res_c = self.image_c.resize((255, 380))
             self.image_tk_c = IT.PhotoImage(self.res_c)
             self.ID_L.config(image=self.image_tk_c)
@@ -240,8 +292,8 @@ class Win:
 
     def generate_barcode_image(self, barcode_data):
         # Define the size and scale for the barcode image
-        width = 200
-        height = 100
+        width = 150
+        height = 80
         scale = 4
 
         # Create a blank image with white background

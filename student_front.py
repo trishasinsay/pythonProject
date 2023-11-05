@@ -14,6 +14,7 @@ import cv2
 import textwrap
 import numpy as np
 import os
+
 import subprocess
 
 # WIN SETTINGS
@@ -77,39 +78,37 @@ class Win:
         self.F2_title.place(x=0, y=0, relwidth=1)
 
         # LABELS
-        self.L1 = Label(self.F1, text='ID NUMBER', font=F3, bg='#B29999').place(x=10, y=60)
-        self.L2 = Label(self.F1, text='ID CONTROL NO.', font=F3, bg='#B29999').place(x=10, y=100)
-        self.L3 = Label(self.F1, text='FULL NAME.', font=F3, bg='#B29999').place(x=10, y=140)
-        self.L4 = Label(self.F1, text='POSITION', font=F3, bg='#B29999').place(x=10, y=180)
-        self.L5 = Label(self.F1, text='DEPARTMENT', font=F3, bg='#B29999').place(x=10, y=220)
-        self.L6 = Label(self.F1, text='SIGNATURE', font=F3, bg='#B29999').place(x=10, y=320)
-        self.L7 = Label(self.F1, text='*Note: Please answer all fields honestly and check your information before\npressing "Next" button and Use CAPITAL LETTERS only', font=F4, bg='#B29999')
-        self.L7.place(x=120, y=255)
-        self.L8 = Label(self.F1,text='*Note: When you are capturing image, press the ENTER KEY to capture your image',font=F4, bg='#B29999')
-        self.L8.place(x=90, y=295)
+        self.L1 = Label(self.F1, text='STUDENT ID NUMBER', font=F3, bg='#B29999').place(x=10, y=60)
+        self.L2 = Label(self.F1, text='FIRST NAME & M.I.', font=F3, bg='#B29999').place(x=10, y=100)
+        self.L3 = Label(self.F1, text='LAST NAME', font=F3, bg='#B29999').place(x=10, y=140)
+        self.L4 = Label(self.F1, text='PROGRAM', font=F3, bg='#B29999').place(x=10, y=180)
+        self.L5 = Label(self.F1, text='SIGNATURE', font=F3, bg='#B29999').place(x=10, y=290)
+        self.L6 = Label(self.F1, text='*Note: Please answer all fields honestly and check your information before\npressing "Next" button and Use CAPITAL LETTERS only', font=F4, bg='#B29999')
+        self.L6.place(x=120, y=230)
+        self.L7 = Label(self.F1,text='*Note: When you are capturing image, press the ENTER KEY to capture your image',font=F4, bg='#B29999')
+        self.L7.place(x=90, y=265)
 
         self.ID = StringVar()
-        self.ControlNo = StringVar()
         self.Fname = StringVar()
-        self.position = StringVar()
-        self.department = StringVar()
+        self.Lname = StringVar()
+        self.program = StringVar()
 
-        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID).place(x=210, y=60, width=400)
-        self.E2 = Entry(self.F1, font=F3, textvariable=self.ControlNo).place(x=208, y=100, width=400)
-        self.E3 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=140, width=400)
-        self.E4 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.position)
-        self.E4['values'] = ("Select your position",
-                             "Instructor I", "Instructor II", 'Instructor III', 'Asst. Prof I', "Asst. Prof II", "Asst. Prof III", "Asst. Prof IV",
-                             "Assoc. Prof I", "Assoc. Prof II", "Assoc. Prof III", "Assoc. Prof IV", "Assoc. Prof V", "Professor I",
-                             "Professor II", "Professor III", "Professor IV", "Professor V", "Professor VI")
+        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID)
+        self.E1.place(x=210, y=60, width=400)
+        self.E1.insert(0, "TUPC-##-####")  # Placeholder text
+        self.E1.config(fg="gray")  # Set text color to gray
+        self.E1.bind("<FocusIn>", self.on_entry_click_id)
+        self.E1.bind("<FocusOut>", self.on_focus_out_id)
+
+        self.E2 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=100, width=400)
+        self.E3 = Entry(self.F1, font=F3, textvariable=self.Lname).place(x=208, y=140, width=400)
+        self.E4 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.program)
+        self.E4['values'] = ("Select your Program",
+                             "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA", "BTTE-CP",
+                             "BTTE-EI", "BTTE-AU", "BTTE-HVACT", "BTTE-E", "BGT-AT", "BET-CT",
+                             "BET-ET", "BET-ESET", "BET-COET", "BET-MT", "BET-PPT", "BET-AT")
         self.E4.current(0)
         self.E4.place(x=208, y=180, width=400)
-        self.E5 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.department)
-        self.E5['values'] = ("Select your Department",
-                             "INDUSTRIAL TECHNOLOGY DEPT.", "MATH AND SCIENCE DEPT.", 'LIBERAL ARTS DEPT.', 'ENGINEERING SCIENCES DEPT.',
-                             "PHYSICAL EDUCATION DEPT.", "INDUSTRIAL EDUCATION DEPT.", "ADMINISTRATIVE SERVICES", "FINANCE SERVICES", "AUXILIARY SERVICES")
-        self.E5.current(0)
-        self.E5.place(x=208, y=220, width=400)
 
 
         # BUTTON
@@ -139,7 +138,7 @@ class Win:
         self.last_y = 0
 
         self.signature_canvas = Canvas(self.F1, relief=SUNKEN, bg='white')
-        self.signature_canvas.place(x=20, y=350, width=585, height=120)
+        self.signature_canvas.place(x=20, y=325, width=585, height=150)
 
         # Bind mouse events to the canvas
         self.signature_canvas.bind("<Button-1>", self.start_drawing)
@@ -155,6 +154,15 @@ class Win:
         self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1)
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
 
+    def on_entry_click_id(self, event):
+        if self.E1.get() == "TUPC-##-####":
+            self.E1.delete(0, "end")
+            self.E1.config(fg="black")
+
+    def on_focus_out_id(self, event):
+        if self.E1.get() == "":
+            self.E1.insert(0, "TUPC-##-####")
+            self.E1.config(fg="gray")
     def start_drawing(self, event):
         self.is_drawing = True
         self.last_x = event.x
@@ -213,19 +221,16 @@ class Win:
             processed_photo_filename = f'processed_photos/photo_{current_time}.jpg'
             cv2.imwrite(processed_photo_filename, resized_photo)
 
+
+
     def generate(self):
-        if self.ID.get() == ''  or self.ControlNo.get() == '' or self.Fname.get() == '' or self.position.get() == '' or self.department.get() == '' :
+        if self.ID.get() == '' or self.Fname.get() == '' or self.Lname.get() == '' or self.program.get() == '' :
             self.message = 'Please answer all input fields'
             self.message_L.config(text=self.message, fg='red')
             self.B4.config(state='disabled')
 
         elif self.E4.current() == 0:
-            self.message = 'Please select your position'
-            self.message_L.config(text=self.message, fg='red')
-            self.B4.config(state='disabled')
-
-        elif self.E5.current() == 0:
-            self.message = 'Please select your department'
+            self.message = 'Please select your program'
             self.message_L.config(text=self.message, fg='red')
             self.B4.config(state='disabled')
 
@@ -240,38 +245,30 @@ class Win:
             self.B4.config(state='disabled')
 
         else:
-            font = IF.truetype(font='Arial Bold.ttf', size=9)
-            font1 = IF.truetype(font='Arial Bold.ttf', size=8)
-            font2 = IF.truetype(font='Arial Bold.ttf', size=10)
-            font3 = IF.truetype(font='Arial Bold.ttf', size=10)
+            font = IF.truetype(font='Century Gothic.ttf', size=12)
+            font1 = IF.truetype(font='gothicb.ttf', size=15)
+            font2 = IF.truetype(font='Century Gothic.ttf', size=11)
+            font3 = IF.truetype(font='arial.ttf', size=10)
             font4 = IF.truetype(font='arial.ttf', size=6)
+            font5 = IF.truetype(font='Arial Bold.ttf', size=8)
+            font6 = IF.truetype(font='arial.ttf', size=7)
+            font7 = IF.truetype(font='arial.ttf', size=8)
 
-            background_image = I.open('faculty_temp.png')
+            background_image = I.open('front_temp.png')
             background_image = background_image.resize((205, 327))
 
             self.image_c = background_image.copy()
             self.Draw = ID.Draw(self.image_c)
 
-            angle = 270
-            self.Draw.text((76.8, 303), self.ID.get(), fill='black', font=font3)
-            self.Draw.text((120, 213), self.Fname.get(), fill='black', font=font, anchor='mm')
-            self.Draw.text((120, 227), self.position.get(), fill='black', font=font1, anchor='mm')
+            self.Draw.text((7.68, 197), self.Fname.get(), fill='black', font=font)
+            self.Draw.text((6.72, 210), self.Lname.get(), fill='black', font=font1)
+            self.Draw.text((7.68, 227), self.program.get(), fill='black', font=font2)
+            self.Draw.text((6.72, 242), self.ID.get(), fill='black', font=font3)
 
-            # Rotate the department text before pasting it onto the ID card
-            department_text = self.department.get()
-            department_font = IF.truetype(font='Arial Bold.ttf', size=12)
-            department_text_image = I.new('RGBA', (225, 29), '#bd2031')  # Create a transparent image
-            department_draw = ID.Draw(department_text_image)
-            department_draw.text((107, 15), department_text, fill='white', font=department_font, anchor='mm')
+            self.Draw.text((25.92, 309.12), 'SIGNATURE', fill='black', font=font4)
 
-            # Rotate the text by the desired angle (e.g., 45 degrees)
-            rotated_department_text_image = department_text_image.rotate(90, expand=True)
-
-            # Paste the rotated department text onto the ID card image
-            self.image_c.paste(rotated_department_text_image,
-                               (8, 78))  # Adjust x and y positions as needed
             # Create a new blank signature image
-            signature_image = Image.new('RGBA', (585, 150))
+            signature_image = Image.new('RGBA', (585, 150), (255,255,255,0))
 
             # Draw the captured signature onto the new image
             draw = ID.Draw(signature_image)
@@ -305,29 +302,31 @@ class Win:
                 signature_image.putdata(new_data)
 
                 # Resize the signature image to the desired size
-                new_signature_size = (80, 41)  # Adjust the size as needed
+                new_signature_size = (72, 41)  # Adjust the size as needed
                 signature_image = signature_image.resize(new_signature_size)
 
                 # Paste the signature image onto the ID card
-                self.image_c.paste(signature_image, (43, 262))  # Adjust the position as needed
+                self.image_c.paste(signature_image, (11, 265))  # Adjust the position as needed
 
             self.Qrcode = Q.QRCode(version=1, box_size=10, border=1)
-            self.Qrcode.add_data(f'{self.Fname.get()} {self.ControlNo.get()}')
+            self.Qrcode.add_data(f'{self.ID.get()} {self.Lname.get()} {self.Fname.get()} {self.program.get()}')
             self.Qrcode.make(fit=True)
             self.Qr = self.Qrcode.make_image(fill_color='#000000', back_color='#ffffff')
-            self.Qr.save('Faculty QR\ID NO._ ' + str(self.ID.get()) + '.png')
+            self.Qr.save(f'QR\ ' + str(self.ID.get()) + '.png')
             self.Qr_res = re.resize_cover(self.Qr, [67.2, 67.2])
-            self.image_c.paste(self.Qr_res, (129, 252))
+            self.image_c.paste(self.Qr_res, (123, 229))
+
+            self.Draw.rectangle((122, 300, 190, 320), fill='#8E8E8E')
 
             # Load the captured image
             if hasattr(self, 'captured_photo'):
                 # Process the captured photo and paste it onto the ID card
-                resized_photo = cv2.resize(self.captured_photo, (90, 96))  # Adjust the size as needed
+                resized_photo = cv2.resize(self.captured_photo, (103, 111))  # Adjust the size as needed
                 photo_paste = I.fromarray(cv2.cvtColor(resized_photo, cv2.COLOR_BGR2RGB))
-                self.image_c.paste(photo_paste, (74, 101))  # Adjust the position as needed
+                self.image_c.paste(photo_paste, (61, 62))  # Adjust the position as needed
 
             # Save the generated ID card as a PNG image
-            id_card_filename = 'Faculty ID\ID NO._' + str(self.ID.get()) + '.png'
+            id_card_filename = f'Student ID/ID_{self.ID.get()}.png'
             self.image_c.save(id_card_filename, "PNG")
             self.res_c = self.image_c.resize((255, 380))
             self.image_tk_c = IT.PhotoImage(self.res_c)
@@ -339,12 +338,10 @@ class Win:
             self.message_L.config(text=self.message, fg='green')
 
             self.ID.set('')
-            self.ControlNo.set('')
             self.Fname.set('')
-            self.position.set('')
-            self.department.set('')
+            self.Lname.set('')
+            self.program.set('')
             self.E4.current(0)
-            self.E5.current(0)
             self.message_L.config(text=self.message, fg='green')
             self.signature_canvas.delete("all")
             self.signature_drawn = False
@@ -353,12 +350,10 @@ class Win:
 
     def clear(self):
         self.ID.set('')
-        self.ControlNo.set('')
         self.Fname.set('')
-        self.position.set('')
-        self.department.set('')
+        self.Lname.set('')
+        self.program.set('')
         self.E4.current(0)
-        self.E5.current(0)
         self.message_L.config(text=self.message, fg='green')
         self.signature_canvas.delete("all")
         self.signature_drawn = False
@@ -367,7 +362,7 @@ class Win:
     def next(self):
         # Close the current Tkinter window
         self.root.destroy()
-        subprocess.Popen(['python', 'faculty_back.py'])
+        subprocess.Popen(['python', 'id_back.py'])
 
 
 root = Tk()

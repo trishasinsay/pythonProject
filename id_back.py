@@ -98,10 +98,19 @@ class Win:
         self.C_barangay = StringVar()
         self.C_city = StringVar()
 
+        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID)
+        self.E1.place(x=210, y=60, width=400)
+        self.E1.insert(0, "TUPC-##-####")  # Placeholder text
+        self.E1.config(fg="gray")  # Set text color to gray
+        self.E1.bind("<FocusIn>", self.on_entry_click_id)
+        self.E1.bind("<FocusOut>", self.on_focus_out_id)
 
-        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID).place(x=208, y=70, width=400)
         self.E2 = Entry(self.F1, font=F3, textvariable=self.C_name).place(x=208, y=185, width=400)
-        self.E3 = Entry(self.F1, font=F3, textvariable=self.C_no).place(x=208, y=220, width=400)
+        self.E3 = Entry(self.F1, font=F3, textvariable=self.C_no)
+        self.E3 = Entry(self.F1, font=F3, textvariable=self.C_no)
+        self.E3.place(x=208, y=220, width=400)
+        self.E3['validate'] = 'key'
+        self.E3['validatecommand'] = (self.E3.register(self.on_validate_contact), '%P')
         self.E4 = Entry(self.F1, font=F3, textvariable=self.C_street).place(x=208, y=255, width=400)
         self.E5 = Entry(self.F1, font=F3, textvariable=self.C_barangay).place(x=208, y=290, width=400)
         self.E5 = Entry(self.F1, font=F3, textvariable=self.C_city).place(x=208, y=325, width=400)
@@ -132,6 +141,19 @@ class Win:
         self.ID_L = Label(self.ID_Frame_Back, text='ID\nCard\nNot Found', font=F1)
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
 
+    def on_validate_contact(self, P):
+        # P is the proposed text
+        return P.isdigit() and len(P) <= 11
+
+    def on_entry_click_id(self, event):
+        if self.E1.get() == "TUPC-##-####":
+            self.E1.delete(0, "end")
+            self.E1.config(fg="black")
+
+    def on_focus_out_id(self, event):
+        if self.E1.get() == "":
+            self.E1.insert(0, "TUPC-##-####")
+            self.E1.config(fg="gray")
 
     def generate(self):
         contact_no = self.C_no.get()
@@ -158,11 +180,11 @@ class Win:
             self.Draw = ID.Draw(self.image_c)
 
 
-            self.Draw.text((50, 78), self.C_name.get(), fill='black', font=font4)
-            self.Draw.text((30, 100), self.C_street.get(), fill='black', font=font2)
-            self.Draw.text((65, 110), self.C_barangay.get(), fill='black', font=font2)
-            self.Draw.text((62, 120), self.C_city.get(), fill='black', font=font2)
-            self.Draw.text((75, 139), self.C_no.get(), fill='black', font=font5)
+            self.Draw.text((108, 87), self.C_name.get(), fill='black', font=font4, anchor='mm')
+            self.Draw.text((108, 106), self.C_street.get(), fill='black', font=font2, anchor='mm')
+            self.Draw.text((106, 115), self.C_barangay.get(), fill='black', font=font2,anchor='mm')
+            self.Draw.text((108, 123), self.C_city.get(), fill='black', font=font2, anchor='mm')
+            self.Draw.text((105, 144), self.C_no.get(), fill='black', font=font5, anchor='mm')
 
 
             # Generate a barcode
