@@ -15,7 +15,7 @@ import win32ui
 import win32con
 import tkinter.messagebox as messagebox
 import os
-
+import re as RE
 
 # WIN SETTINGS
 title = 'TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES - CAVITE CAMPUS KIOSK ID MAKER'
@@ -38,8 +38,11 @@ class Win:
         self.root.title(W[0])
         self.root.geometry(W[1])
 
+        # Set window icon
+        self.root.iconbitmap('C:/Users/Trisha/PycharmProjects/pythonProject/tup-logo-1.ico')
+
         # Load the background image
-        bg_image = I.open('req_bg.png')
+        bg_image = I.open('maroon.png')
         bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
 
         self.bg_image = IT.PhotoImage(bg_image)
@@ -99,8 +102,8 @@ class Win:
         self.C_city = StringVar()
 
         self.E1 = Entry(self.F1, font=F3, textvariable=self.ID)
-        self.E1.place(x=210, y=60, width=400)
-        self.E1.insert(0, "TUPC-##-####")  # Placeholder text
+        self.E1.place(x=210, y=70, width=400)
+        self.E1.insert(0, "TUPC-XX-XXXX")  # Placeholder text
         self.E1.config(fg="gray")  # Set text color to gray
         self.E1.bind("<FocusIn>", self.on_entry_click_id)
         self.E1.bind("<FocusOut>", self.on_focus_out_id)
@@ -135,10 +138,10 @@ class Win:
         self.message_L.place(x=0, y=0, relwidth=1, relheight=1)
 
         # F2
-        self.ID_Frame_Back = Frame(self.F2, relief=SUNKEN, bd=1)
+        self.ID_Frame_Back = Frame(self.F2, relief=SUNKEN)
         self.ID_Frame_Back.place(x=200, y=100, width=255, height=380)
 
-        self.ID_L = Label(self.ID_Frame_Back, text='ID\nCard\nNot Found', font=F1)
+        self.ID_L = Label(self.ID_Frame_Back, text='ID\nCard\nNot Found', font=F1, bg='#B29999')
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
 
     def on_validate_contact(self, P):
@@ -146,14 +149,45 @@ class Win:
         return P.isdigit() and len(P) <= 11
 
     def on_entry_click_id(self, event):
-        if self.E1.get() == "TUPC-##-####":
-            self.E1.delete(0, "end")
+        current_text = self.E1.get()
+        if current_text == "TUPC-XX-XXXX":
+            self.E1.delete(0, "end")  # Delete the current text
+            self.E1.insert(0, "TUPC-")  # Set the initial format
+            self.E1.icursor(6)  # Set the cursor position after "TUPC- "
             self.E1.config(fg="black")
+            self.E1.bind("<Key>", self.on_key_press)  # Bind the Key event
+
+    def on_key_press(self, event):
+        # Allow only numbers and '-' character
+        allowed_chars = set("0123456789-")
+
+        if event.char == "" or event.char in allowed_chars:
+            # If BackSpace or allowed character, proceed with the default behavior
+            return
+
+        # If other keys are pressed, check the position of the cursor
+        cursor_position = self.E1.index(INSERT)
+        if cursor_position <= 5:
+            # If the cursor is at or before the "TUPC-ID NO.", prevent modifications
+            return 'break'
+
+        # If the cursor is after the "TUPC-ID NO.", allow modifications
+        return
 
     def on_focus_out_id(self, event):
-        if self.E1.get() == "":
-            self.E1.insert(0, "TUPC-##-####")
+        current_text = self.E1.get()
+        if current_text == "TUPC- ":
+            # Reset to the placeholder
+            self.E1.delete(0, "end")
+            self.E1.insert(0, "TUPC-XX-XXXX")
             self.E1.config(fg="gray")
+            self.E1.unbind("<Key>")  # Unbind the Key event
+        elif not RE.match(r'^TUPC-\d{2}-\d{3}$', current_text):
+            # If the entered text doesn't match the specified format, do not reset
+            return
+        else:
+            # Text matches the expected format, keep it as is
+            return
 
     def generate(self):
         contact_no = self.C_no.get()
@@ -165,6 +199,11 @@ class Win:
 
         elif self.ID.get() == '' or self.C_name.get() == '' or self.C_street.get() == '' or self.C_barangay.get() == '' or self.C_city.get() == '':
             self.message = 'Please answer all input fields'
+            self.message_L.config(text=self.message, fg='red')
+
+        # Check if E1 is equal to the placeholder or 'TUPC-' and show an error message
+        elif self.E1.get() == "TUPC-XXXXXX" or not RE.match(r'^TUPC-\d{2}-\d{4}$', self.E1.get()):
+            self.message = 'Please enter a valid TUPC date format (TUPC-XX-XXXX).'
             self.message_L.config(text=self.message, fg='red')
 
         else:

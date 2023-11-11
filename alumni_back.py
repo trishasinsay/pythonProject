@@ -92,7 +92,7 @@ class Win:
         self.B2 = Button(self.F1, text='Clear', font=F2, command=self.clear)
         self.B2.place(x=380, y=450, width=200)
 
-        self.B3 = Button(self.root, text='Next', font=F2, command=self.next, bg='#5D1C1C', fg='white', state='disabled')
+        self.B3 = Button(self.root, text='Print', font=F2, command=self.print, bg='#5D1C1C', fg='white', state='disabled')
         self.B3.place(x=1130, y=620, width=200)
 
         # MESSAGE BOX
@@ -122,7 +122,7 @@ class Win:
         self.ID_Frame = Frame(self.F2, relief=SUNKEN, bd=1)
         self.ID_Frame.place(x=150, y=220, width=327, height=205)
 
-        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1)
+        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1, bg='#B29999')
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
 
 
@@ -143,26 +143,6 @@ class Win:
         self.is_drawing = False
         self.signature_drawn = True
 
-
-    def remove_background(self, image):
-        # Convert the image to grayscale
-        image_gray = ImageOps.grayscale(image)
-
-        # Create a binary mask by applying a threshold
-        threshold = 500  # Adjust the threshold value as needed
-        mask = image_gray.point(lambda p: p < threshold and 255)
-
-        # Optionally, you can apply a filter to the mask to refine it (e.g., remove noise)
-        mask = mask.filter(ImageFilter.MedianFilter(size=5))
-
-        # Make the image RGBA
-        image_rgba = image.convert('RGBA')
-
-        # Apply the mask to the image
-        signature_image = ImageChops.composite(image_rgba, Image.new('RGBA', image.size, (255, 255, 255, 0)), mask)
-
-        return signature_image
-
     def generate(self):
         if self.ID.get() == '' :
             self.message = 'Please input your ID number'
@@ -178,7 +158,7 @@ class Win:
         else:
 
             background_image = I.open('alumni.png')
-            background_image = background_image.resize((327, 205))
+            background_image = background_image.resize((327, 206))
 
             self.image_c = background_image.copy()
             self.Draw = ID.Draw(self.image_c)
@@ -191,7 +171,7 @@ class Win:
             if os.path.exists(signature_filename):
                 signature_image = I.open(signature_filename)
                 signature_image = signature_image.convert('RGBA')
-                signature_image = self.remove_background(signature_image)
+
 
                 # Resize the signature image to the desired size
                 new_signature_size = (180, 29)  # Adjust the size as needed
@@ -201,7 +181,7 @@ class Win:
                 self.image_c.paste(signature_image, (71, 10))  # Adjust the position as needed
 
 
-            self.image_c.save('ALUMBACK\ID_' + str(self.ID.get()) + '.png')
+            self.image_c.save('ALUMNI_BACK\ID_' + str(self.ID.get()) + '.png')
             self.res_c = self.image_c.resize((327, 205))
             self.image_tk_c = IT.PhotoImage(self.res_c)
             self.ID_L.config(image=self.image_tk_c)
@@ -224,7 +204,7 @@ class Win:
         self.signature_drawn = False
         self.ID_L.config(image='')
 
-    def next(self):
+    def print(self):
         # Close the current Tkinter window
         self.root.destroy()
         subprocess.Popen(['python', 'id_back.py'])

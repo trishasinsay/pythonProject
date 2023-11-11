@@ -14,7 +14,7 @@ import cv2
 import textwrap
 import numpy as np
 import os
-
+from datetime import datetime
 import subprocess
 
 # WIN SETTINGS
@@ -40,7 +40,6 @@ class Win:
         # Load the background image
         bg_image = Image.open('req_bg.png')
         bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
-
         self.bg_image = IT.PhotoImage(bg_image)
 
         # Create a Label to display the background image
@@ -131,6 +130,7 @@ class Win:
         self.last_x = 0
         self.last_y = 0
 
+        # Signature canvas
         self.signature_canvas = Canvas(self.F1, relief=SUNKEN, bg='white')
         self.signature_canvas.place(x=20, y=325, width=585, height=150)
 
@@ -140,6 +140,7 @@ class Win:
         self.signature_canvas.bind("<ButtonRelease-1>", self.stop_drawing)
 
         self.signature_drawn = False
+        self.signature_coords = []
 
         # F2
         self.ID_Frame = Frame(self.F2, relief=SUNKEN, bd=1)
@@ -152,18 +153,32 @@ class Win:
         self.is_drawing = True
         self.last_x = event.x
         self.last_y = event.y
-        self.signature_coords = []  # Start with an empty list for new signature
 
     def draw(self, event):
         if self.is_drawing:
             self.signature_canvas.create_line(self.last_x, self.last_y, event.x, event.y, fill='black', width=2)
             self.last_x = event.x
             self.last_y = event.y
-            self.signature_coords.append((event.x, event.y))  # Store coordinates
+            self.signature_coords.append((event.x, event.y))
 
     def stop_drawing(self, event):
         self.is_drawing = False
         self.signature_drawn = True
+
+    def save_signature(self):
+        if self.signature_coords:
+            signature_image = Image.new("RGBA", (600, 150), (255, 255, 255, 0))  # Transparent background
+            draw = ID.Draw(signature_image)
+            for x, y in self.signature_coords:
+                draw.rectangle([x, y, x + 2, y + 2], fill="black")
+
+            # Generate a unique filename based on the current timestamp
+            current_time = datetime.now().strftime("%Y%m%d%H%M%S")
+            signature_filename = f'signatures/signature_{current_time}.png'
+
+            # Save the signature as a PNG image with transparency
+            signature_image.save(signature_filename, format="PNG")
+
 
     def photo_capture(self):
         cap = cv2.VideoCapture(0)
@@ -191,7 +206,7 @@ class Win:
 
         if self.captured_photo is not None:
             # Save the captured photo with a unique ID (e.g., timestamp)
-            current_time = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            current_time = datetime.now().strftime("%Y%m%d%H%M%S")
             photo_filename = f'captured_photos/photo_{current_time}.jpg'
             cv2.imwrite(photo_filename, self.captured_photo)
 
@@ -202,27 +217,6 @@ class Win:
             # Save the processed photo
             processed_photo_filename = f'processed_photos/photo_{current_time}.jpg'
             cv2.imwrite(processed_photo_filename, resized_photo)
-
-            # Optionally, you can display the processed photo or perform other actions here
-
-    def remove_background(self, image):
-        # Convert the image to grayscale
-        image_gray = ImageOps.grayscale(image)
-
-        # Create a binary mask by applying a threshold
-        threshold = 500  # Adjust the threshold value as needed
-        mask = image_gray.point(lambda p: p < threshold and 255)
-
-        # Optionally, you can apply a filter to the mask to refine it (e.g., remove noise)
-        mask = mask.filter(ImageFilter.MedianFilter(size=5))
-
-        # Make the image RGBA
-        image_rgba = image.convert('RGBA')
-
-        # Apply the mask to the image
-        signature_image = ImageChops.composite(image_rgba, Image.new('RGBA', image.size, (255, 255, 255, 0)), mask)
-
-        return signature_image
 
     def generate(self):
         if self.ID.get() == '' or self.Fname.get() == '' or self.Lname.get() == '' or self.program.get() == '' :
@@ -268,11 +262,6 @@ class Win:
 
             self.Draw.text((25.92, 309.12), 'SIGNATURE', fill='black', font=font4)
 
-            # Save the drawn signature as an image
-            signature_filename = f'signatures/signature_{self.ID.get()}.png'
-            self.signature_canvas.postscript(file=signature_filename, colormode='color')
-
-
             self.Qrcode = Q.QRCode(version=1, box_size=10, border=1)
             self.Qrcode.add_data(f'{self.ID.get()} {self.Lname.get()} {self.Fname.get()} {self.program.get()}')
             self.Qrcode.make(fit=True)
@@ -290,19 +279,17 @@ class Win:
                 photo_paste = I.fromarray(cv2.cvtColor(resized_photo, cv2.COLOR_BGR2RGB))
                 self.image_c.paste(photo_paste, (61, 62))  # Adjust the position as needed
 
-            # Load the saved signature image and remove the background
-            if os.path.exists(signature_filename):
-                signature_image = I.open(signature_filename)
-                signature_image = signature_image.convert('RGBA')
-                signature_image = self.remove_background(signature_image)
+            current_time = datetime.now().strftime("%Y%m%d%H%M%S")
+            file = f'signatures/signature_{current_time}.png'
 
-                # Resize the signature image to the desired size
-                new_signature_size = (72, 41)  # Adjust the size as needed
-                signature_image = signature_image.resize(new_signature_size)
+            if os.path.exists(file):
+                signature_image = Image.open(file)
+                resized_signature = signature_image.resize((72, 41))
+                signature_tk = IT.PhotoImage(resized_signature)
+                self.ID_L.config(image=signature_tk)
+                self.ID_L.image = signature_tk
 
-                # Paste the signature image onto the ID card
-                self.image_c.paste(signature_image, (11, 265))  # Adjust the position as needed
-
+                self.image_c.paste(resized_signature, (11, 265))  # Adjust X and Y coordinates as needed
 
             self.image_c.save(f'Student ID\ID_' + str(self.ID.get()) + '.png')
             self.res_c = self.image_c.resize((255, 380))
@@ -323,7 +310,10 @@ class Win:
             self.signature_canvas.delete("all")
             self.signature_drawn = False
 
+
             self.B4.config(state='normal')
+
+            self.save_signature()
 
     def clear(self):
         self.ID.set('')

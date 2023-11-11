@@ -14,7 +14,7 @@ import cv2
 import textwrap
 import numpy as np
 import os
-
+import re as RE
 import subprocess
 
 # WIN SETTINGS
@@ -37,8 +37,11 @@ class Win:
         self.root.title(W[0])
         self.root.geometry(W[1])
 
+        # Set window icon
+        self.root.iconbitmap('C:/Users/Trisha/PycharmProjects/pythonProject/tup-logo-1.ico')
+
         # Load the background image
-        bg_image = Image.open('req_bg.png')
+        bg_image = Image.open('maroon.png')
         bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
 
         self.bg_image = IT.PhotoImage(bg_image)
@@ -79,8 +82,8 @@ class Win:
 
         # LABELS
         self.L1 = Label(self.F1, text='STUDENT ID NUMBER', font=F3, bg='#B29999').place(x=10, y=60)
-        self.L2 = Label(self.F1, text='FIRST NAME & M.I.', font=F3, bg='#B29999').place(x=10, y=100)
-        self.L3 = Label(self.F1, text='LAST NAME', font=F3, bg='#B29999').place(x=10, y=140)
+        self.L2 = Label(self.F1, text='LAST NAME', font=F3, bg='#B29999').place(x=10, y=100)
+        self.L3 = Label(self.F1, text='FIRST NAME & M.I. ', font=F3, bg='#B29999').place(x=10, y=140)
         self.L4 = Label(self.F1, text='PROGRAM', font=F3, bg='#B29999').place(x=10, y=180)
         self.L5 = Label(self.F1, text='SIGNATURE', font=F3, bg='#B29999').place(x=10, y=290)
         self.L6 = Label(self.F1, text='*Note: Please answer all fields honestly and check your information before\npressing "Next" button and Use CAPITAL LETTERS only', font=F4, bg='#B29999')
@@ -93,15 +96,16 @@ class Win:
         self.Lname = StringVar()
         self.program = StringVar()
 
+
         self.E1 = Entry(self.F1, font=F3, textvariable=self.ID)
         self.E1.place(x=210, y=60, width=400)
-        self.E1.insert(0, "TUPC-##-####")  # Placeholder text
+        self.E1.insert(0, "TUPC-XX-XXXX")  # Placeholder text
         self.E1.config(fg="gray")  # Set text color to gray
         self.E1.bind("<FocusIn>", self.on_entry_click_id)
         self.E1.bind("<FocusOut>", self.on_focus_out_id)
 
-        self.E2 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=100, width=400)
-        self.E3 = Entry(self.F1, font=F3, textvariable=self.Lname).place(x=208, y=140, width=400)
+        self.E2 = Entry(self.F1, font=F3, textvariable=self.Lname ).place(x=208, y=100, width=400)
+        self.E3 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=140, width=400)
         self.E4 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.program)
         self.E4['values'] = ("Select your Program",
                              "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA", "BTTE-CP",
@@ -148,21 +152,59 @@ class Win:
         self.signature_drawn = False
 
         # F2
-        self.ID_Frame = Frame(self.F2, relief=SUNKEN, bd=1)
+        self.ID_Frame = Frame(self.F2, relief=SUNKEN)
         self.ID_Frame.place(x=200, y=100, width=255, height=380)
 
-        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1)
+        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1, bg='#B29999')
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
 
     def on_entry_click_id(self, event):
-        if self.E1.get() == "TUPC-##-####":
-            self.E1.delete(0, "end")
+        current_text = self.E1.get()
+        if current_text == "TUPC-XX-XXXX":
+            self.E1.delete(0, "end")  # Delete the current text
+            self.E1.insert(0, "TUPC-")  # Set the initial format
+            self.E1.icursor(6)  # Set the cursor position after "TUPC- "
             self.E1.config(fg="black")
+            self.E1.bind("<Key>", self.on_key_press)  # Bind the Key event
+            # Open the on-screen keyboard executable
+            subprocess.Popen(['osk.exe'])
+
+    def on_key_press(self, event):
+        # Allow only numbers and '-' character
+        allowed_chars = set("0123456789-")
+
+        if event.char == "" or event.char in allowed_chars:
+            # If BackSpace or allowed character, proceed with the default behavior
+            return
+
+        # If other keys are pressed, check the position of the cursor
+        cursor_position = self.E1.index(INSERT)
+        if cursor_position <= 5:
+            # If the cursor is at or before the "TUPC-ID NO.", prevent modifications
+            return 'break'
+
+        # If the cursor is after the "TUPC-ID NO.", allow modifications
+        return
 
     def on_focus_out_id(self, event):
-        if self.E1.get() == "":
-            self.E1.insert(0, "TUPC-##-####")
+        current_text = self.E1.get()
+        if current_text == "TUPC- ":
+            # Reset to the placeholder
+            self.E1.delete(0, "end")
+            self.E1.insert(0, "TUPC-XX-XXXX")
             self.E1.config(fg="gray")
+            self.E1.unbind("<Key>")  # Unbind the Key event
+        elif not RE.match(r'^TUPC-\d{2}-\d{3}$', current_text):
+            # If the entered text doesn't match the specified format, do not reset
+            return
+        else:
+            # Text matches the expected format, keep it as is
+            return
+
+        # Close the on-screen keyboard executable when focus out
+        subprocess.run(['taskkill', '/IM', 'osk.exe', '/F'])
+
+
     def start_drawing(self, event):
         self.is_drawing = True
         self.last_x = event.x
@@ -222,7 +264,6 @@ class Win:
             cv2.imwrite(processed_photo_filename, resized_photo)
 
 
-
     def generate(self):
         if self.ID.get() == '' or self.Fname.get() == '' or self.Lname.get() == '' or self.program.get() == '' :
             self.message = 'Please answer all input fields'
@@ -233,6 +274,11 @@ class Win:
             self.message = 'Please select your program'
             self.message_L.config(text=self.message, fg='red')
             self.B4.config(state='disabled')
+
+            # Check if E1 is equal to the placeholder or 'TUPC-' and show an error message
+        elif self.E1.get() == "TUPC-XXXXXX" or not RE.match(r'^TUPC-\d{2}-\d{4}$', self.E1.get()):
+            self.message = 'Please enter a valid TUPC date format (TUPC-XX-XXXX).'
+            self.message_L.config(text=self.message, fg='red')
 
         elif not hasattr(self, 'captured_photo'):
             self.message = 'Please capture your photo'

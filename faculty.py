@@ -14,6 +14,7 @@ import cv2
 import textwrap
 import numpy as np
 import os
+import re as RE
 import subprocess
 
 # WIN SETTINGS
@@ -36,8 +37,11 @@ class Win:
         self.root.title(W[0])
         self.root.geometry(W[1])
 
+        # Set window icon
+        self.root.iconbitmap('C:/Users/Trisha/PycharmProjects/pythonProject/tup-logo-1.ico')
+
         # Load the background image
-        bg_image = Image.open('req_bg.png')
+        bg_image = Image.open('maroon.png')
         bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
 
         self.bg_image = IT.PhotoImage(bg_image)
@@ -78,38 +82,43 @@ class Win:
 
         # LABELS
         self.L1 = Label(self.F1, text='ID NUMBER', font=F3, bg='#B29999').place(x=10, y=60)
-        self.L2 = Label(self.F1, text='ID CONTROL NO.', font=F3, bg='#B29999').place(x=10, y=100)
-        self.L3 = Label(self.F1, text='FULL NAME.', font=F3, bg='#B29999').place(x=10, y=140)
-        self.L4 = Label(self.F1, text='POSITION', font=F3, bg='#B29999').place(x=10, y=180)
-        self.L5 = Label(self.F1, text='DEPARTMENT', font=F3, bg='#B29999').place(x=10, y=220)
-        self.L6 = Label(self.F1, text='SIGNATURE', font=F3, bg='#B29999').place(x=10, y=320)
-        self.L7 = Label(self.F1, text='*Note: Please answer all fields honestly and check your information before\npressing "Next" button and Use CAPITAL LETTERS only', font=F4, bg='#B29999')
-        self.L7.place(x=120, y=255)
-        self.L8 = Label(self.F1,text='*Note: When you are capturing image, press the ENTER KEY to capture your image',font=F4, bg='#B29999')
-        self.L8.place(x=90, y=295)
+        self.L2 = Label(self.F1, text='FULL NAME', font=F3, bg='#B29999').place(x=10, y=100)
+        self.L3 = Label(self.F1, text='POSITION', font=F3, bg='#B29999').place(x=10, y=140)
+        self.L4 = Label(self.F1, text='DEPARTMENT', font=F3, bg='#B29999').place(x=10, y=180)
+        self.L5 = Label(self.F1, text='SIGNATURE', font=F3, bg='#B29999').place(x=10, y=290)
+        self.L6 = Label(self.F1, text='*Note: Please answer all fields honestly and check your information before\npressing "Next" button and Use CAPITAL LETTERS only', font=F4, bg='#B29999')
+        self.L6.place(x=120, y=220)
+        self.L7 = Label(self.F1,text='*Note: When you are capturing image, press the ENTER KEY to capture your image',font=F4, bg='#B29999')
+        self.L7.place(x=90, y=255)
 
         self.ID = StringVar()
-        self.ControlNo = StringVar()
         self.Fname = StringVar()
         self.position = StringVar()
         self.department = StringVar()
 
-        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID).place(x=210, y=60, width=400)
-        self.E2 = Entry(self.F1, font=F3, textvariable=self.ControlNo).place(x=208, y=100, width=400)
-        self.E3 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=140, width=400)
-        self.E4 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.position)
-        self.E4['values'] = ("Select your position",
-                             "Instructor I", "Instructor II", 'Instructor III', 'Asst. Prof I', "Asst. Prof II", "Asst. Prof III", "Asst. Prof IV",
+        # Add a placeholder text to Entry widget E1
+        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID)
+        self.E1.place(x=210, y=60, width=400)
+        self.E1.insert(0, "XX-XXX")  # Placeholder text
+        self.E1.config(fg="gray")  # Set text color to gray
+        self.E1.bind("<FocusIn>", self.on_entry_click_id)
+        self.E1.bind("<FocusOut>", self.on_focus_out_id)
+
+
+        self.E2 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=100, width=400)
+        self.E3 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.position)
+        self.E3['values'] = ("Select your position",
+                             "Faculty", "Admin", "Instructor I", "Instructor II", 'Instructor III', 'Asst. Prof I', "Asst. Prof II", "Asst. Prof III", "Asst. Prof IV",
                              "Assoc. Prof I", "Assoc. Prof II", "Assoc. Prof III", "Assoc. Prof IV", "Assoc. Prof V", "Professor I",
                              "Professor II", "Professor III", "Professor IV", "Professor V", "Professor VI")
-        self.E4.current(0)
-        self.E4.place(x=208, y=180, width=400)
-        self.E5 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.department)
-        self.E5['values'] = ("Select your Department",
+        self.E3.current(0)
+        self.E3.place(x=208, y=140, width=400)
+        self.E4 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.department)
+        self.E4['values'] = ("Select your Department",
                              "INDUSTRIAL TECHNOLOGY DEPT.", "MATH AND SCIENCE DEPT.", 'LIBERAL ARTS DEPT.', 'ENGINEERING SCIENCES DEPT.',
                              "PHYSICAL EDUCATION DEPT.", "INDUSTRIAL EDUCATION DEPT.", "ADMINISTRATIVE SERVICES", "FINANCE SERVICES", "AUXILIARY SERVICES")
-        self.E5.current(0)
-        self.E5.place(x=208, y=220, width=400)
+        self.E4.current(0)
+        self.E4.place(x=208, y=180, width=400)
 
 
         # BUTTON
@@ -139,7 +148,7 @@ class Win:
         self.last_y = 0
 
         self.signature_canvas = Canvas(self.F1, relief=SUNKEN, bg='white')
-        self.signature_canvas.place(x=20, y=350, width=585, height=120)
+        self.signature_canvas.place(x=20, y=330, width=585, height=130)
 
         # Bind mouse events to the canvas
         self.signature_canvas.bind("<Button-1>", self.start_drawing)
@@ -149,10 +158,10 @@ class Win:
         self.signature_drawn = False
 
         # F2
-        self.ID_Frame = Frame(self.F2, relief=SUNKEN, bd=1)
+        self.ID_Frame = Frame(self.F2, relief=SUNKEN)
         self.ID_Frame.place(x=200, y=100, width=255, height=380)
 
-        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1)
+        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1, bg='#B29999')
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
 
     def start_drawing(self, event):
@@ -174,6 +183,27 @@ class Win:
     def stop_drawing(self, event):
         self.is_drawing = False
         self.signature_drawn = True
+
+    def on_entry_click_id(self, event):
+        if self.E1.get() == "XX-XXX":
+            self.E1.delete(0, "end")
+            self.E1.config(fg="black")
+
+    def on_focus_out_id(self, event):
+        if self.E1.get() == "":
+            self.E1.insert(0, "XX-XXX")
+            self.E1.config(fg="gray")
+
+    def on_entry_ID(self, event):
+        current_text = self.E1.get()
+        if current_text == "XX-XXX ":
+            self.E1.delete(0, "end")
+            self.E1.config(fg="black")
+
+    def on_focus_out_ID(self, event):
+        if self.E1.get() == "":
+            self.E1.insert(0, "XX-XXX")
+            self.E1.config(fg="gray")
 
     def photo_capture(self):
         cap = cv2.VideoCapture(0)
@@ -214,17 +244,24 @@ class Win:
             cv2.imwrite(processed_photo_filename, resized_photo)
 
     def generate(self):
-        if self.ID.get() == ''  or self.ControlNo.get() == '' or self.Fname.get() == '' or self.position.get() == '' or self.department.get() == '' :
+        # Check if ID follows the specified format
+        if not RE.match(r'^\w{2}-\w{3}$', self.ID.get()):
+            self.message = 'ID format should be XX-XXX'
+            self.message_L.config(text=self.message, fg='red')
+            self.B4.config(state='disabled')
+            return
+
+        if self.ID.get() == '' or self.Fname.get() == '' or self.position.get() == '' or self.department.get() == '' :
             self.message = 'Please answer all input fields'
             self.message_L.config(text=self.message, fg='red')
             self.B4.config(state='disabled')
 
-        elif self.E4.current() == 0:
+        elif self.E3.current() == 0:
             self.message = 'Please select your position'
             self.message_L.config(text=self.message, fg='red')
             self.B4.config(state='disabled')
 
-        elif self.E5.current() == 0:
+        elif self.E4.current() == 0:
             self.message = 'Please select your department'
             self.message_L.config(text=self.message, fg='red')
             self.B4.config(state='disabled')
@@ -312,7 +349,7 @@ class Win:
                 self.image_c.paste(signature_image, (43, 262))  # Adjust the position as needed
 
             self.Qrcode = Q.QRCode(version=1, box_size=10, border=1)
-            self.Qrcode.add_data(f'{self.Fname.get()} {self.ControlNo.get()}')
+            self.Qrcode.add_data(f'{self.Fname.get()} | {self.ID.get()}')
             self.Qrcode.make(fit=True)
             self.Qr = self.Qrcode.make_image(fill_color='#000000', back_color='#ffffff')
             self.Qr.save('Faculty QR\ID NO._ ' + str(self.ID.get()) + '.png')
@@ -339,12 +376,11 @@ class Win:
             self.message_L.config(text=self.message, fg='green')
 
             self.ID.set('')
-            self.ControlNo.set('')
             self.Fname.set('')
             self.position.set('')
             self.department.set('')
+            self.E3.current(0)
             self.E4.current(0)
-            self.E5.current(0)
             self.message_L.config(text=self.message, fg='green')
             self.signature_canvas.delete("all")
             self.signature_drawn = False
@@ -353,12 +389,11 @@ class Win:
 
     def clear(self):
         self.ID.set('')
-        self.ControlNo.set('')
         self.Fname.set('')
         self.position.set('')
         self.department.set('')
+        self.E3.current(0)
         self.E4.current(0)
-        self.E5.current(0)
         self.message_L.config(text=self.message, fg='green')
         self.signature_canvas.delete("all")
         self.signature_drawn = False

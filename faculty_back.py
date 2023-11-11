@@ -7,17 +7,18 @@ from PIL import Image as I
 from PIL import ImageTk as IT
 from PIL import ImageDraw as ID
 from PIL import ImageFont as IF
+from datetime import datetime
 import qrcode as Q
 from resizeimage import resizeimage as re
-import barcode
-from barcode.writer import ImageWriter
+import barcode2d
 import win32print
 import win32ui
 import win32con
 import tkinter.messagebox as messagebox
 import os
-from pdf417gen import encode
-from barcode import generate
+from pdf417 import encode, render_image
+import re as RE
+
 
 # WIN SETTINGS
 title = 'TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES - CAVITE CAMPUS KIOSK ID MAKER'
@@ -39,8 +40,11 @@ class Win:
         self.root.title(W[0])
         self.root.geometry(W[1])
 
+        # Set window icon
+        self.root.iconbitmap('C:/Users/Trisha/PycharmProjects/pythonProject/tup-logo-1.ico')
+
         # Load the background image
-        bg_image = I.open('req_bg.png')
+        bg_image = I.open('maroon.png')
         bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
 
         self.bg_image = IT.PhotoImage(bg_image)
@@ -83,7 +87,7 @@ class Win:
         self.L1 = Label(self.F1, text='DATE OF ID CREATION', font=F3, bg='#B29999').place(x=10, y=60)
         self.L2 = Label(self.F1, text='ID NO.', font=F3, bg='#B29999').place(x=335, y=60)
         self.L3 = Label(self.F1, text='GSIS NO.', font=F3, bg='#B29999').place(x=10, y=115)
-        self.L4 = Label(self.F1, text='POLICY NO.', font=F3, bg='#B29999').place(x=310, y=115)
+        self.L4 = Label(self.F1, text='GSIS BP NO.', font=F3, bg='#B29999').place(x=310, y=115)
         self.L5 = Label(self.F1, text='TIN NO.', font=F3, bg='#B29999').place(x=10, y=155)
         self.L6 = Label(self.F1, text='PAG-IBIG NO.', font=F3, bg='#B29999').place(x=300, y=155)
         self.L7 = Label(self.F1, text='PHILHEALTH NO.', font=F3, bg='#B29999').place(x=10, y=195)
@@ -119,6 +123,7 @@ class Win:
         self.E1.config(fg="gray")  # Set text color to gray
         self.E1.bind("<FocusIn>", self.on_entry_click_date)
         self.E1.bind("<FocusOut>", self.on_focus_out_date)
+
         # Entry for ID
         self.E2 = Entry(self.F1, font=F3, textvariable=self.ID)
         self.E2.place(x=420, y=60, width=200)
@@ -126,11 +131,32 @@ class Win:
         self.E2.config(fg="gray")
         self.E2.bind("<FocusIn>", self.on_entry_click)
         self.E2.bind("<FocusOut>", self.on_focus_out)
-        self.E3 = Entry(self.F1, font=F3, textvariable=self.GSIS).place(x=100, y=115, width=200)
-        self.E4 = Entry(self.F1, font=F3, textvariable=self.POLICY).place(x=420, y=115, width=200)
-        self.E5 = Entry(self.F1, font=F3, textvariable=self.TIN).place(x=100, y=155, width=200)
-        self.E6 = Entry(self.F1, font=F3, textvariable=self.PAGIBIG).place(x=420, y=155, width=200)
-        self.E7 = Entry(self.F1, font=F3, textvariable=self.PHILHEALTH).place(x=180, y=195, width=400)
+
+        self.E3 = Entry(self.F1, font=F3, textvariable=self.GSIS)
+        self.E3.place(x=100, y=115, width=200)
+        self.E3['validate'] = 'key'
+        self.E3['validatecommand'] = (self.E3.register(self.on_validate_numbers), '%P')
+
+        self.E4 = Entry(self.F1, font=F3, textvariable=self.POLICY)
+        self.E4.place(x=420, y=115, width=200)
+        self.E4['validate'] = 'key'
+        self.E4['validatecommand'] = (self.E4.register(self.on_validate_numbers), '%P')
+
+        self.E5 = Entry(self.F1, font=F3, textvariable=self.TIN)
+        self.E5.place(x=100, y=155, width=200)
+        self.E5['validate'] = 'key'
+        self.E5['validatecommand'] = (self.E5.register(self.on_validate_numbers), '%P')
+
+        self.E6 = Entry(self.F1, font=F3, textvariable=self.PAGIBIG)
+        self.E6.place(x=420, y=155, width=200)
+        self.E6['validate'] = 'key'
+        self.E6['validatecommand'] = (self.E6.register(self.on_validate_numbers), '%P')
+
+        self.E7 = Entry(self.F1, font=F3, textvariable=self.PHILHEALTH)
+        self.E7.place(x=180, y=195, width=400)
+        self.E7['validate'] = 'key'
+        self.E7['validatecommand'] = (self.E7.register(self.on_validate_numbers), '%P')
+
         self.E8 = Entry(self.F1, font=F3, textvariable=self.FNAME).place(x=208, y=270, width=400)
         self.E9 = Entry(self.F1, font=F3, textvariable=self.STREET).place(x=208, y=300, width=400)
         self.E10 = Entry(self.F1, font=F3, textvariable=self.BRGY).place(x=208, y=330, width=400)
@@ -159,24 +185,52 @@ class Win:
         self.message_L.place(x=0, y=0, relwidth=1, relheight=1)
 
         # F2
-        self.ID_Frame = Frame(self.F2, relief=SUNKEN, bd=1)
+        self.ID_Frame = Frame(self.F2, relief=SUNKEN)
         self.ID_Frame.place(x=200, y=100, width=255, height=380)
 
-        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1)
+        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1, bg='#B29999')
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
-
 
     def on_entry_click(self, event):
         current_text = self.E2.get()
         if current_text == "TUPC-ID NO. #### ":
-            self.E2.delete(11, "end")  # Delete the current text
+            self.E2.delete(0, "end")  # Delete the current text
+            self.E2.insert(0, "TUPC-ID NO. ")  # Set the initial format
             self.E2.icursor(11)  # Set the cursor position after "TUPC-ID NO. "
             self.E2.config(fg="black")
+            self.E2.bind("<Key>", self.on_key_press)  # Bind the Key event
+
+    def on_key_press(self, event):
+        # Allow only numbers and '-' character
+        allowed_chars = set("0123456789-")
+
+        if event.char == "" or event.char in allowed_chars:
+            # If BackSpace or allowed character, proceed with the default behavior
+            return
+
+        # If other keys are pressed, check the position of the cursor
+        cursor_position = self.E2.index(INSERT)
+        if cursor_position <= 11:
+            # If the cursor is at or before the "TUPC-ID NO.", prevent modifications
+            return 'break'
+
+        # If the cursor is after the "TUPC-ID NO.", allow modifications
+        return
 
     def on_focus_out(self, event):
-        if self.E2.get() == "":
-            self.E2.insert(0, "TUPC-ID NO. ")
+        current_text = self.E2.get()
+        if current_text == "TUPC-ID NO. ":
+            # Reset to the placeholder
+            self.E2.delete(0, "end")
+            self.E2.insert(0, "TUPC-ID NO. #### ")
             self.E2.config(fg="gray")
+            self.E2.unbind("<Key>")  # Unbind the Key event
+        elif not RE.match(r'^TUPC-ID NO. \d{2}-\d{3}$', current_text):
+            # If the entered text doesn't match the specified format, do not reset
+            return
+        else:
+            # Text matches the expected format, keep it as is
+            return
 
     def on_entry_click_date(self, event):
         if self.E1.get() == "mm-dd-yyyy":
@@ -192,12 +246,47 @@ class Win:
         # P is the proposed text
         return P.isdigit() and len(P) <= 11
 
+    def on_validate_numbers(self, P):
+        # P is the proposed text
+        return all(char.isdigit() or char == '-' for char in P)
+
+
+    def generate_barcode_image(self, barcode_value):
+        # Encode the barcode data with fewer columns (e.g., 4 columns)
+        barcode_data = encode(barcode_value, columns=4)
+
+        # Generate the barcode image
+        barcode_image = render_image(barcode_data)
+
+        # Resize the barcode image
+        barcode_image = barcode_image.resize((586, 221))
+
+        return barcode_image
+
+    def is_valid_date_format(self, date_str):
+        try:
+            # Attempt to parse the date string
+            datetime.strptime(date_str, '%m-%d-%Y')
+            return True
+        except ValueError:
+            return False
+
     def generate(self):
         contact_no = self.CONTACT.get()
 
         # Check if contact_no contains only digits and has a length of 11
         if not contact_no.isdigit() or len(contact_no) != 11:
             self.message = 'Contact number must be exactly 11 digits and contain only numbers.'
+            self.message_L.config(text=self.message, fg='red')
+
+        # Check if E2 is still equal to the placeholder or only contains the word 'TUPC-ID NO.'
+        if self.E2.get() == "TUPC-ID NO. #### " or not RE.match(r'^TUPC-ID NO.\d{2}-\d{3}$', self.E2.get()):
+            self.message = 'Please enter a valid ID number.'
+            self.message_L.config(text=self.message, fg='red')
+
+        # Check if the date entered in E1 matches the specified format
+        elif not self.is_valid_date_format(self.DATE.get()):
+            self.message = 'Please enter a valid date format (mm-dd-yyyy).'
             self.message_L.config(text=self.message, fg='red')
 
         elif (self.ID.get() == '' or self.DATE.get() == '' or self.GSIS.get() == '' or self.POLICY.get() == ''
@@ -246,30 +335,28 @@ class Win:
             self.image_c.paste(rotated_date_font_image,
                                (191, 277))  # Adjust x and y positions as needed
 
+
             # Generate a PDF417 barcode
-            barcode_value = self.FNAME.get()
+            barcode_value = self.ID.get()
 
-            # Encode the barcode data with fewer columns (e.g., 4 columns)
-            barcode_data = encode(barcode_value, columns=4)
-
-            # Generate the barcode image
-            barcode_image = self.generate_barcode_image(barcode_data)
+            # Generate the barcode image using the new method
+            barcode_image = self.generate_barcode_image(barcode_value)
 
             # Save the barcode image to a file
-            barcode_image.save('Barcode_Faculty/' + barcode_value + '.png')
+            barcode_filename = 'BARCODE_FACULTY/' + barcode_value + '.png'
+            barcode_image.save(barcode_filename)
+            barcode_img = I.open(barcode_filename)
 
-            # Crop the barcode image (adjust cropping values as needed)
-            # Note: PDF417 barcodes are usually more rectangular, so cropping may vary
-            cropped_barcode_img = barcode_image.crop((0, 0, barcode_image.width - 80, barcode_image.height + 150))
+            cropped_barcode_img = barcode_img.crop((0, 40, barcode_img.width - 10, barcode_img.height - 32))
 
             # Resize the cropped barcode image
-            cropped_barcode_img = cropped_barcode_img.resize((84, 43))
+            cropped_barcode_img = cropped_barcode_img.resize((82, 44))
 
-            # Paste the cropped barcode image onto the ID card
-            self.image_c.paste(cropped_barcode_img, (110, 260))  # Adjust the coordinates for proper placement
+            # Paste the barcode image onto the ID card
+            self.image_c.paste(cropped_barcode_img, (104, 280))  # Adjust the coordinates for proper placement
 
             # Save the final ID card image
-            self.image_c.save('FACULTY BARCODE/ID_' + str(self.ID.get()) + '.png')
+            self.image_c.save('FACULTY_BACK/ID_' + str(self.ID.get()) + '.png')
             self.res_c = self.image_c.resize((255, 380))
             self.image_tk_c = IT.PhotoImage(self.res_c)
             self.ID_L.config(image=self.image_tk_c)
@@ -290,38 +377,6 @@ class Win:
             self.DATE.set('')
             self.message_L.config(text=self.message, fg='green')
 
-    def generate_barcode_image(self, barcode_data):
-        # Define the size and scale for the barcode image
-        width = 150
-        height = 80
-        scale = 4
-
-        # Create a blank image with white background
-        image = I.new('RGB', (width, height), 'white')
-        draw = ID.Draw(image)
-
-        # Calculate the number of rows and columns
-        num_rows = len(barcode_data)
-        num_cols = len(barcode_data[0])
-
-        # Calculate the width and height of each cell
-        cell_width = width // num_cols
-        cell_height = height // num_rows
-
-        # Iterate through the barcode data and draw black squares for filled cells
-        for row in range(num_rows):
-            for col in range(num_cols):
-                if barcode_data[row][col] == 1:
-                    x0 = col * cell_width
-                    y0 = row * cell_height
-                    x1 = (col + 1) * cell_width
-                    y1 = (row + 1) * cell_height
-                    draw.rectangle([x0, y0, x1, y1], fill='black')
-
-        # Resize the barcode image
-        barcode_image = image.resize((width * scale, height * scale))
-
-        return barcode_image
     def clear(self):
         self.ID.set('')
         self.GSIS.set('')

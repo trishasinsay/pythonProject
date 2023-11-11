@@ -15,6 +15,7 @@ import textwrap
 import numpy as np
 import os
 import subprocess
+import re as RE
 
 # WIN SETTINGS
 title = 'TECHNOLOGICAL UNIVERSITY OF THE PHILIPPINES - CAVITE CAMPUS KIOSK ID MAKER'
@@ -78,8 +79,8 @@ class Win:
 
         # LABELS
         self.L1 = Label(self.F1, text='STUDENT ID NUMBER', font=F3, bg='#B29999').place(x=10, y=60)
-        self.L2 = Label(self.F1, text='FIRST NAME & M.I.', font=F3, bg='#B29999').place(x=10, y=100)
-        self.L3 = Label(self.F1, text='LAST NAME', font=F3, bg='#B29999').place(x=10, y=140)
+        self.L2 = Label(self.F1, text='LAST NAME', font=F3, bg='#B29999').place(x=10, y=100)
+        self.L3 = Label(self.F1, text='FIRST NAME & M.I.', font=F3, bg='#B29999').place(x=10, y=140)
         self.L4 = Label(self.F1, text='PROGRAM', font=F3, bg='#B29999').place(x=10, y=180)
         self.L5 = Label(self.F1, text='YEAR GRADUATED', font=F3, bg='#B29999').place(x=10, y=220)
         self.L6 = Label(self.F1, text='TIN', font=F3, bg='#B29999').place(x=10, y=260)
@@ -97,9 +98,15 @@ class Win:
         self.tin = StringVar()
         self.gsis = StringVar()
 
-        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID).place(x=210, y=60, width=400)
-        self.E2 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=100, width=400)
-        self.E3 = Entry(self.F1, font=F3, textvariable=self.Lname).place(x=208, y=140, width=400)
+        self.E1 = Entry(self.F1, font=F3, textvariable=self.ID)
+        self.E1.place(x=210, y=60, width=400)
+        self.E1.insert(0, "TUPC-XX-XXXX")  # Placeholder text
+        self.E1.config(fg="gray")  # Set text color to gray
+        self.E1.bind("<FocusIn>", self.on_entry_click_id)
+        self.E1.bind("<FocusOut>", self.on_focus_out_id)
+
+        self.E2 = Entry(self.F1, font=F3, textvariable=self.Lname).place(x=208, y=100, width=400)
+        self.E3 = Entry(self.F1, font=F3, textvariable=self.Fname).place(x=208, y=140, width=400)
         self.E4 = ttk.Combobox(self.F1, font=F3, state='readonly', textvariable=self.program)
         self.E4['values'] = ("Select your Program",
                              "BSCE", "BSEE", 'BSME', 'BSIE-ICT', "BSIE-HE", "BSIE-IA", "BTTE-CP",
@@ -107,9 +114,14 @@ class Win:
                              "BET-ET", "BET-ESET", "BET-COET", "BET-MT", "BET-PPT", "BET-AT")
         self.E4.current(0)
         self.E4.place(x=208, y=180, width=400)
-        self.E5 = Entry(self.F1, font=F3, textvariable=self.graduated).place(x=208, y=220, width=400)
-        self.E6 = Entry(self.F1, font=F3, textvariable=self.tin).place(x=208, y=260, width=400)
-        self.E7 = Entry(self.F1, font=F3, textvariable=self.gsis).place(x=208, y=310, width=400)
+        validate_cmd = self.root.register(self.validate_input)
+
+        self.E5 = Entry(self.F1, font=F3, textvariable=self.graduated, validate="key",
+                        validatecommand=(validate_cmd, '%P')).place(x=208, y=220, width=400)
+        self.E6 = Entry(self.F1, font=F3, textvariable=self.tin, validate="key",
+                        validatecommand=(validate_cmd, '%P')).place(x=208, y=260, width=400)
+        self.E7 = Entry(self.F1, font=F3, textvariable=self.gsis, validate="key",
+                        validatecommand=(validate_cmd, '%P')).place(x=208, y=310, width=400)
 
 
         # BUTTON
@@ -135,11 +147,15 @@ class Win:
 
 
         # F2
-        self.ID_Frame = Frame(self.F2, relief=SUNKEN, bd=1)
+        self.ID_Frame = Frame(self.F2, relief=SUNKEN)
         self.ID_Frame.place(x=150, y=200, width=327, height=205)
 
-        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1)
+        self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1, bg='#B29999')
         self.ID_L.place(x=0, y=0, relwidth=1, relheight=1)
+
+    def validate_input(self, input_text):
+            # Allow only numbers and '-' character
+        return all(char.isdigit() or char == '-' for char in input_text)
 
 
     def photo_capture(self):
@@ -180,6 +196,46 @@ class Win:
             processed_photo_filename = f'processed_photos/photo_{current_time}.jpg'
             cv2.imwrite(processed_photo_filename, resized_photo)
 
+    def on_entry_click_id(self, event):
+        current_text = self.E1.get()
+        if current_text == "TUPC-XX-XXXX":
+            self.E1.delete(0, "end")  # Delete the current text
+            self.E1.insert(0, "TUPC-")  # Set the initial format
+            self.E1.icursor(6)  # Set the cursor position after "TUPC- "
+            self.E1.config(fg="black")
+            self.E1.bind("<Key>", self.on_key_press)  # Bind the Key event
+
+    def on_key_press(self, event):
+        # Allow only numbers and '-' character
+        allowed_chars = set("0123456789-")
+
+        if event.char == "" or event.char in allowed_chars:
+            # If BackSpace or allowed character, proceed with the default behavior
+            return
+
+        # If other keys are pressed, check the position of the cursor
+        cursor_position = self.E1.index(INSERT)
+        if cursor_position <= 5:
+            # If the cursor is at or before the "TUPC-ID NO.", prevent modifications
+            return 'break'
+
+        # If the cursor is after the "TUPC-ID NO.", allow modifications
+        return
+
+    def on_focus_out_id(self, event):
+        current_text = self.E1.get()
+        if current_text == "TUPC- ":
+            # Reset to the placeholder
+            self.E1.delete(0, "end")
+            self.E1.insert(0, "TUPC-XX-XXXX")
+            self.E1.config(fg="gray")
+            self.E1.unbind("<Key>")  # Unbind the Key event
+        elif not RE.match(r'^TUPC-\d{2}-\d{3}$', current_text):
+            # If the entered text doesn't match the specified format, do not reset
+            return
+        else:
+            # Text matches the expected format, keep it as is
+            return
 
 
     def generate(self):
@@ -206,7 +262,7 @@ class Win:
 
 
             background_image = I.open('alumni_front.png')
-            background_image = background_image.resize((327, 205))
+            background_image = background_image.resize((327, 206))
 
             self.image_c = background_image.copy()
             self.Draw = ID.Draw(self.image_c)
