@@ -15,6 +15,7 @@ import win32ui
 import win32con
 import tkinter.messagebox as messagebox
 import os
+import subprocess
 import re as RE
 
 # WIN SETTINGS
@@ -268,52 +269,9 @@ class Win:
             self.ID_L.config(image='')
 
     def print_id(self):
-        # Ask the user if they want to print the ID card
-        confirm = messagebox.askyesno("Print ID", "Do you want to print the ID card?")
-
-        if confirm:
-            try:
-                # Set up the printer
-                printer_name = win32print.GetDefaultPrinter()
-                hprinter = win32print.OpenPrinter(printer_name)
-                printer_info = win32print.GetPrinter(hprinter, 2)
-
-                # Create a DC (device context) for the printer
-                printer_dc = win32ui.CreateDC()
-                printer_dc.CreatePrinterDC(printer_name)
-
-                # Set the orientation to portrait
-                printer_dc.StartDoc("ID Card")
-                printer_dc.StartPage()
-                printer_dc.SetMapMode(win32con.MM_TEXT)
-
-                # Load the ID card image
-                id_image = win32ui.CreateBitmap()
-                id_image.CreateCompatibleBitmap(printer_dc, 205, 327)  # Adjust the size as needed
-
-                # Select the loaded bitmap
-                printer_dc.SelectObject(id_image)
-
-                # Load the image you want to print (modify the path as needed)
-                image_path = r'C:\Users\Trisha\PycharmProjects\pythonProject\Library\ID_TUPC-20-0132.png'
-
-                image = I.open(image_path)
-
-                # Draw the image onto the printer DC
-                printer_dc.StretchBlt((0, 0, 205, 327), image, (0, 0, image.width, image.height), win32con.SRCCOPY)
-
-                # Clean up and finish printing
-                printer_dc.EndPage()
-                printer_dc.EndDoc()
-                printer_dc.DeleteDC()
-
-                messagebox.showinfo("Printed", "ID card printed successfully!")
-
-            except Exception as e:
-                messagebox.showerror("Error", f"An error occurred while printing: {str(e)}")
-
-        else:
-            messagebox.showinfo("Print Cancelled", "Printing cancelled by user.")
+        # Close the current Tkinter window
+        self.root.destroy()
+        subprocess.Popen(['python', 'app_kiosk.py'])
 
 if __name__ == '__main__':
     root = Tk()

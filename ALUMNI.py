@@ -38,7 +38,7 @@ class Win:
         self.root.geometry(W[1])
 
         # Load the background image
-        bg_image = Image.open('req_bg.png')
+        bg_image = Image.open('maroon.png')
         bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
 
         self.bg_image = IT.PhotoImage(bg_image)

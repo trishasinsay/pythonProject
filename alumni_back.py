@@ -37,7 +37,7 @@ class Win:
         self.root.geometry(W[1])
 
         # Load the background image
-        bg_image = Image.open('req_bg.png')
+        bg_image = Image.open('maroon.png')
         bg_image = bg_image.resize((1366, 768))  # Adjust the size to match your window size
 
         self.bg_image = IT.PhotoImage(bg_image)
@@ -119,7 +119,7 @@ class Win:
         self.signature_drawn = False
 
         # F2
-        self.ID_Frame = Frame(self.F2, relief=SUNKEN, bd=1)
+        self.ID_Frame = Frame(self.F2, relief=SUNKEN)
         self.ID_Frame.place(x=150, y=220, width=327, height=205)
 
         self.ID_L = Label(self.ID_Frame, text='ID\nCard\nNot Found', font=F1, bg='#B29999')

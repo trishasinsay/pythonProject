@@ -307,8 +307,9 @@ class Win:
             # Paste the rotated department text onto the ID card image
             self.image_c.paste(rotated_department_text_image,
                                (8, 78))  # Adjust x and y positions as needed
-            # Create a new blank signature image
-            signature_image = Image.new('RGBA', (585, 150))
+
+            # Create a new blank signature image with an alpha channel
+            signature_image = Image.new('RGBA', (585, 150), (255, 255, 255, 0))
 
             # Draw the captured signature onto the new image
             draw = ID.Draw(signature_image)
@@ -324,29 +325,20 @@ class Win:
             signature_filename = f'signatures/signature_{self.ID.get()}.png'
             signature_image.save(signature_filename, 'PNG')
 
-            # Load the saved signature image and remove the background
-            if os.path.exists(signature_filename):
-                signature_image = Image.open(signature_filename)
+            # Open the ID card background image
+            background_image = Image.open('sign_emp.png')
 
-                # Remove the background (make it transparent)
-                signature_image = signature_image.convert("RGBA")
-                data = signature_image.getdata()
+            # Resize the signature image to match the ID card background
+            signature_image = signature_image.resize((background_image.width, background_image.height))
 
-                new_data = []
-                for item in data:
-                    if item[:3] == (255, 255, 255):
-                        new_data.append((255, 255, 255, 0))  # Replace white background with transparency
-                    else:
-                        new_data.append(item)
+            # Blend the signature image with the ID card background using the alpha channel
+            blended_signature = Image.alpha_composite(background_image.convert("RGBA"), signature_image)
 
-                signature_image.putdata(new_data)
+            # Resize the blended signature to the desired size (72x41)
+            resized_blended_signature = blended_signature.resize((80, 41))
 
-                # Resize the signature image to the desired size
-                new_signature_size = (80, 41)  # Adjust the size as needed
-                signature_image = signature_image.resize(new_signature_size)
-
-                # Paste the signature image onto the ID card
-                self.image_c.paste(signature_image, (43, 262))  # Adjust the position as needed
+            # Paste the resized blended signature onto the ID card
+            self.image_c.paste(resized_blended_signature, (43, 262), resized_blended_signature)
 
             self.Qrcode = Q.QRCode(version=1, box_size=10, border=1)
             self.Qrcode.add_data(f'{self.Fname.get()} | {self.ID.get()}')
